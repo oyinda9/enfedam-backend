@@ -1,12 +1,21 @@
 import express from "express";
-import { createParent, getAllParents, getParentById, updateParent, deleteParent  } from "../controllers/ParentController";
+import {
+  createParent,
+  getAllParents,
+  updateParent,
+  deleteParent,
+} from "../controllers/ParentController";
+import {
+  authenticateAdmin,
+  authorizeAdmin,
+} from "../middleware/authMiddleware";
 
 const router = express.Router();
 
-router.post("/", createParent);
-router.get("/", getAllParents);
-// router.get("/:id", getParentById);
-router.put("/:id", updateParent);
-router.delete("/:id", deleteParent);
+// Apply middleware to routes
+router.post("/", authenticateAdmin, authorizeAdmin, createParent); // Only admins can create parents
+router.get("/", getAllParents); // Public route (no authentication required)
+router.put("/:id", authenticateAdmin, authorizeAdmin, updateParent); // Only admins can update parents
+router.delete("/:id", authenticateAdmin, authorizeAdmin, deleteParent); // Only admins can delete parents
 
 export default router;

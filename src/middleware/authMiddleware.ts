@@ -1,33 +1,76 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-
+import { Role } from "@prisma/client";  // Import the Role enum from Prisma
 dotenv.config();
-const SECRET_KEY = process.env.JWT_SECRET || "your_default_secret";
+const SECRET_KEY = process.env.JWT_SECRET;
 
-// ✅ Extend Request to Include `user`
-export interface AuthRequest extends Request {
-  admin?: { id: string; role: string };
+if (!SECRET_KEY) {
+  throw new Error("JWT_SECRET environment variable is not set");
 }
 
-// 🛡️ Middleware to Verify JWT Token
-export const authenticateUser = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const token = req.header("Authorization")?.replace("Bearer ", "");
-  if (!token) return res.status(401).json({ error: "Access denied. No token provided." });
+// Extend Request to Include `user` information (id, role, etc.)
+export interface AuthRequest extends Request {
+  user?: { id: string; role: Role };  // Use the Role enum for the role type
+}
 
+// Middleware to verify the JWT and extract user information
+export const authenticateAdmin = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
   try {
+    // Extract the token from the Authorization header
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      res.status(401).json({ error: "Access denied. No token provided." });
+      return;
+    }
+
+    // Verify the token and decode the user info
     const decoded = jwt.verify(token, SECRET_KEY) as { id: string; role: string };
-    req.admin = decoded; // Attach user data
+
+    // Ensure the token contains valid user info
+    if (!decoded.id || !decoded.role) {
+      res.status(400).json({ error: "Invalid token payload" });
+      return;
+    }
+
+    // Cast the role to Role enum explicitly
+    req.user = {
+      id: decoded.id,
+      role: decoded.role as Role,  // Explicitly cast the role to Role enum
+    };
+
+    // Proceed to the next middleware or route handler
     next();
   } catch (error) {
-    res.status(400).json({ error: "Invalid token" });
+    console.error("Token Verification Error:", error);
+
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ error: "Token expired" });
+      return;
+    }
+    if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ error: "Invalid token" });
+      return;
+    }
+
+    res.status(500).json({ error: "Authentication failed" });
+    return;
   }
 };
 
-// 🔐 Ensure Only Admin Can Register Users
-export const authorizeAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.admin || req.admin.role !== "ADMIN") {
-    return res.status(403).json({ error: "Forbidden: Only Admins can access this" });
+// Middleware to check if the user is an admin and allow access accordingly
+export const authorizeAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  // Check if the logged-in user's role is 'ADMIN'
+  if (req.user?.role !== Role.ADMIN) {
+     res.status(403).json({ error: "Forbidden. You do not have permission to perform this action." });
+     return
   }
+
+  // If authorized (user is admin), proceed to the next middleware or route handler
   next();
 };

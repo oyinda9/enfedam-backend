@@ -42,6 +42,7 @@ model Student {
   results     Result[]
   birthday    DateTime
   role        Role         @default(STUDENT)
+  
 }
 
 model Teacher {
@@ -64,7 +65,7 @@ model Teacher {
 }
 
 model Parent {
-  id        String    @id
+  id        String    @id  @default(uuid()) 
   username  String    @unique
   name      String
   surname   String
