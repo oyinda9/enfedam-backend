@@ -37,81 +37,40 @@ export const registerAdmin = async (
   }
 };
 
-//  Login Admin
-// export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     const { username, password } = req.body;
-
-//     // Find the admin by username
-//     const admin = await prisma.admin.findUnique({ where: { username } });
-
-//     if (!admin) {
-//       res.status(404).json({ error: "Admin not found" });
-//       return; // Ensure the function exits after sending the response
-//     }
-
-//     // Compare the provided password with the hashed password
-//     const isValid = await bcrypt.compare(password, admin.password);
-//     if (!isValid) {
-//       res.status(401).json({ error: "Invalid credentials" });
-//       return; // Ensure the function exits after sending the response
-//     }
-
-//     // Generate a JWT token
-//     const token = jwt.sign({ id: admin.id, role: "ADMIN" }, SECRET_KEY, {
-//       expiresIn: "2h",
-//     });
-
-//     res.status(200).json({ message: "Login successful", token });
-//   } catch (error) {
-//     console.error("Login Error:", error);
-//     res.status(500).json({ error: "Login failed" });
-//   }
-// };
-export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
+export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { username, password } = req.body;
+    const { email, username, password } = req.body;
 
-    // Validate input
-    if (!username) {
-      res.status(400).json({ error: "Username is required" });
+    if (!email || !username || !password) {
+      res
+        .status(400)
+        .json({ error: "Email, username, and password are required" });
       return;
     }
 
     let user;
     let role;
 
-    // Check Admin first (requires password)
-    user = await prisma.admin.findUnique({ where: { username } });
+    // Check for student
+    user = await prisma.student.findUnique({
+      where: { email, username },
+    });
+    if (user) role = "STUDENT";
 
-    if (user) {
-      role = "ADMIN";
-
-      // Validate password
-      if (!password) {
-        res.status(400).json({ error: "Password required for admin" });
-        return;
-      }
-
-      const isValid = await bcrypt.compare(password, user.password);
-      if (!isValid) {
-        res.status(401).json({ error: "Invalid credentials" });
-        return;
-      }
-    } else {
-      // Check Teacher, Student, and Parent (no password required)
-      user = await prisma.teacher.findUnique({ where: { username } });
+    // Check for teacher
+    if (!user) {
+      user = await prisma.teacher.findUnique({
+        where: { email, username },
+      });
       if (user) role = "TEACHER";
+    }
 
-      if (!user) {
-        user = await prisma.student.findUnique({ where: { username } });
-        if (user) role = "STUDENT";
-      }
-
-      if (!user) {
-        user = await prisma.parent.findUnique({ where: { username } });
-        if (user) role = "PARENT";
-      }
+    // Check for parent
+    if (!user) {
+      user = await prisma.parent.findUnique({
+        where: { email, username },
+      });
+      if (user) role = "USER";
     }
 
     // If no user is found
@@ -132,3 +91,41 @@ export const loginAdmin = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
+export const loginAdmin = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      res.status(400).json({ error: "Username and password are required" });
+      return;
+    }
+
+    // Find Admin by username
+    const user = await prisma.admin.findUnique({ where: { username } });
+
+    if (!user) {
+      res.status(404).json({ error: "Admin not found" });
+      return;
+    }
+
+    // Validate password
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      res.status(401).json({ error: "Invalid credentials" });
+      return;
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, role: "ADMIN" }, SECRET_KEY, {
+      expiresIn: "2h",
+    });
+
+    res.status(200).json({ message: "Login successful", token, role: "ADMIN" });
+  } catch (error) {
+    console.error("Login Error:", error);
+    res.status(500).json({ error: "Login failed" });
+  }
+};
