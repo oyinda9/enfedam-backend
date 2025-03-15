@@ -3,30 +3,30 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const createAdmin = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { username } = req.body;
+// export const createAdmin = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const { username } = req.body;
 
-    // Count the existing admins to generate unique admin IDs
-    const count = await prisma.admin.count();
-    const newAdminId = `admin${count + 1}`;
+//     // Count the existing admins to generate unique admin IDs
+//     const count = await prisma.admin.count();
+//     const newAdminId = `admin${count + 1}`;
 
-    const admin = await prisma.admin.create({
-      data: {
-        id: newAdminId,
-        username,
-      },
-    });
+//     const admin = await prisma.admin.create({
+//       data: {
+//         id: newAdminId,
+//         username,
+//       },
+//     });
 
-    res.status(201).json(admin);
-  } catch (error) {
-    console.error("Error creating admin:", error);
-    res.status(500).json({ error: "Failed to create admin" });
-  }
-};
+//     res.status(201).json(admin);
+//   } catch (error) {
+//     console.error("Error creating admin:", error);
+//     res.status(500).json({ error: "Failed to create admin" });
+//   }
+// };
 
 // ✅ Get all Admins
 export const getAllAdmins = async (req: Request, res: Response) => {

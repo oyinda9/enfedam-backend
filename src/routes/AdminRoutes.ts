@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createAdmin, getAllAdmins, getAdminById, updateAdmin, deleteAdmin } from "../controllers/AdminControllers";
 
+
 const router = Router();
 
 router.post("/", createAdmin);

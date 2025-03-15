@@ -14,8 +14,9 @@ datasource db {
 }
 
 model Admin {
-  id       String @id
+  id       String @id@default(uuid()) 
   username String @unique
+  password String 
   role     Role   @default(ADMIN)
 }
 
@@ -32,12 +33,12 @@ model Student {
   sex         UserSex
   createdAt   DateTime     @default(now())
   parentId    String?
-  parent      Parent ?      @relation(fields: [parentId], references: [id])
+  parent      Parent?      @relation(fields: [parentId], references: [id])
   classId     Int
   class       Class        @relation(fields: [classId], references: [id])
   gradeId     Int
   grade       Grade        @relation(fields: [gradeId], references: [id])
-  attendances Attendance[] 
+  attendances Attendance[]
   results     Result[]
   birthday    DateTime
   role        Role         @default(STUDENT)
@@ -61,6 +62,7 @@ model Teacher {
   birthday  DateTime
   role      Role      @default(TEACHER)
 }
+
 model Parent {
   id        String    @id
   username  String    @unique
@@ -192,6 +194,7 @@ enum UserSex {
   MALE
   FEMALE
 }
+
 enum Role {
   ADMIN
   TEACHER
