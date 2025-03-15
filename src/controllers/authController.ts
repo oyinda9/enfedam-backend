@@ -68,43 +68,50 @@ export const registerAdmin = async (
 //     res.status(500).json({ error: "Login failed" });
 //   }
 // };
-export const loginAdmin = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const loginAdmin = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
+
+    // Validate input
+    if (!username) {
+      res.status(400).json({ error: "Username is required" });
+      return;
+    }
 
     let user;
     let role;
 
     // Check Admin first (requires password)
     user = await prisma.admin.findUnique({ where: { username } });
+
     if (user) {
       role = "ADMIN";
+
+      // Validate password
       if (!password) {
         res.status(400).json({ error: "Password required for admin" });
         return;
       }
+
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
       }
-    }
-
-    // For Teacher, Student, and Parent (no password required)
-    if (!user) {
+    } else {
+      // Check Teacher, Student, and Parent (no password required)
       user = await prisma.teacher.findUnique({ where: { username } });
       if (user) role = "TEACHER";
-    }
-    if (!user) {
-      user = await prisma.student.findUnique({ where: { username } });
-      if (user) role = "STUDENT";
-    }
-    if (!user) {
-      user = await prisma.parent.findUnique({ where: { username } });
-      if (user) role = "PARENT";
+
+      if (!user) {
+        user = await prisma.student.findUnique({ where: { username } });
+        if (user) role = "STUDENT";
+      }
+
+      if (!user) {
+        user = await prisma.parent.findUnique({ where: { username } });
+        if (user) role = "PARENT";
+      }
     }
 
     // If no user is found
@@ -113,16 +120,15 @@ export const loginAdmin = async (
       return;
     }
 
-    // Generate JWT token for all users
+    // Generate JWT token
     const token = jwt.sign({ id: user.id, role }, SECRET_KEY, {
       expiresIn: "2h",
     });
 
     res.status(200).json({ message: "Login successful", token, role });
-    return;
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ error: "Login failed" });
-    return;
   }
 };
+
