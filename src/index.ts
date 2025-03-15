@@ -10,7 +10,7 @@ import LessonRoutes from "./routes/LessonRoutes";
 import ResultRoutes from "./routes/ResultRoutes";
 import ClassRoutes from "./routes/ClassRoute";
 import EventsRoutes from "./routes/EventRoutes";
-import AuthRoutes from "./routes/authRoutes";
+import AuthRoutes from "./routes/AuthRoutes";
 
 const prisma = new PrismaClient();
 const app = express();
