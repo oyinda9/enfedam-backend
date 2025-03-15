@@ -1,8 +1,9 @@
 import { Day, PrismaClient, UserSex } from "@prisma/client";
-
+import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  const hashedPassword = await bcrypt.hash("adminpassword", 10); // Hash the password
   console.log("Resetting database...");
 
   // Clear all tables (order matters due to foreign key constraints)
@@ -27,7 +28,11 @@ async function main() {
 
   // Admin
   const admin = await prisma.admin.create({
-    data: { id: "admin1", username: "admin1" },
+    data: {
+      id: "some-unique-id", // If your schema requires an ID
+      username: "admin",
+      password: hashedPassword, // Ensure this is included
+    },
   });
 
   // Grade
