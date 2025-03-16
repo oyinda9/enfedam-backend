@@ -59,7 +59,7 @@ export const createTeacher = async (
         address,
         img,
         bloodType,
-        sex,
+        sex: sex.toUpperCase(),
         birthday: parsedBirthday,
         ...(subjectIds && subjectIds.length > 0
           ? { subjects: { connect: subjectIds.map((id: string) => ({ id })) } }
