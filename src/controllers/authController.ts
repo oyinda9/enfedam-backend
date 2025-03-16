@@ -125,8 +125,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Generate JWT token
     const token = jwt.sign({ id: user.id, role }, process.env.JWT_SECRET || "secret", {
-      expiresIn: "2h",
+      expiresIn: "1d",
     });
+    
+    // Pass the token in the Authorization header
+    res.setHeader("Authorization", `Bearer ${token}`);
+
 
     res.status(200).json({ message: "Login successful", token, role });
   } catch (error) {

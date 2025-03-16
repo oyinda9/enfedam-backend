@@ -68,9 +68,26 @@ export const authorizeAdmin = (req: AuthRequest, res: Response, next: NextFuncti
   // Check if the logged-in user's role is 'ADMIN'
   if (req.user?.role !== Role.ADMIN) {
      res.status(403).json({ error: "Forbidden. You do not have permission to perform this action." });
-     return
+     return;
   }
 
   // If authorized (user is admin), proceed to the next middleware or route handler
   next();
 };
+
+// Middleware to prevent a parent (USER role) from creating another parent
+export const authorizeParentCreation = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Check if the logged-in user is a parent (USER role)
+  if (req.user?.role === Role.USER) {
+     res.status(403).json({ error: "Unauthorized: You are not allowed to create a parent." });
+     return
+  }
+
+  // If not a parent (they may be an admin or other authorized role), proceed
+  next();
+};
+
