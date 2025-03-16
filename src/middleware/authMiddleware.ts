@@ -91,3 +91,32 @@ export const authorizeParentCreation = (
   next();
 };
 
+export const authorizeTeacherCreation = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Check if the logged-in user is a parent (USER role)
+  if (req.user?.role === Role.TEACHER) {
+     res.status(403).json({ error: "Unauthorized: You are not allowed to create a TEACHER." });
+     return
+  }
+
+  // If not a parent (they may be an admin or other authorized role), proceed
+  next();
+};
+
+export const authorizesStudentCreation = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  // Check if the logged-in user is a parent (USER role)
+  if (req.user?.role === Role.STUDENT) {
+     res.status(403).json({ error: "Unauthorized: You are not allowed to create a student." });
+     return
+  }
+
+  // If not a parent (they may be an admin or other authorized role), proceed
+  next();
+};

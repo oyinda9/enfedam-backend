@@ -4,58 +4,81 @@ import { connect } from "http2";
 
 const prisma = new PrismaClient();
 
-export const createTeacher = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const {
-        username, name, surname, email, phone, address, img, bloodType, sex, birthday,
-        subjectIds, lessonIds, classIds
-      } = req.body 
-  
-      // Check if the username already exists
-      const existingTeacher = await prisma.teacher.findUnique({ where: { username } });
-      if (existingTeacher) {
-        res.status(400).json({ error: "Teacher with this username already exists" });
-        return;
-      }
-  
-      // Generate a new teacher ID
-      const count = await prisma.teacher.count();
-      const newTeacherId = `teacher${count + 1}`;
-  
-      // Validate birthday format
-      const parsedBirthday = new Date(birthday);
-      if (isNaN(parsedBirthday.getTime())) {
-        res.status(400).json({ error: "Invalid birthday format" });
-        return;
-      }
-  
-      // Create teacher
-      const teacher = await prisma.teacher.create({
-        data: {
-          id: newTeacherId,
-          username,
-          name,
-          surname,
-          email,
-          phone,
-          address,
-          img,
-          bloodType,
-          sex,
-          birthday: parsedBirthday,
-          subjects:  { connect: {id:subjectIds }} ,
-          lessons: { connect:{id:lessonIds}},
-          classes: {connect:{id:classIds}},
-        },
-      });
-  
-      res.status(201).json(teacher);
-    } catch (error) {
-      console.error("Error creating teacher:", error);
-      res.status(500).json({ error: "Failed to create teacher" });
+export const createTeacher = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const {
+      username,
+      name,
+      surname,
+      email,
+      phone,
+      address,
+      img,
+      bloodType,
+      sex,
+      birthday,
+      subjectIds,
+      lessonIds,
+      classIds,
+    } = req.body;
+
+    // Check if the username already exists
+    const existingTeacher = await prisma.teacher.findUnique({
+      where: { username },
+    });
+    if (existingTeacher) {
+      res
+        .status(400)
+        .json({ error: "Teacher with this username already exists" });
+      return;
     }
-  };
-  
+
+    // Generate a new teacher ID
+    const count = await prisma.teacher.count();
+    const newTeacherId = `teacher${count + 1}`;
+
+    // Validate birthday format
+    const parsedBirthday = new Date(birthday);
+    if (isNaN(parsedBirthday.getTime())) {
+      res.status(400).json({ error: "Invalid birthday format" });
+      return;
+    }
+
+    // Create teacher
+    const teacher = await prisma.teacher.create({
+      data: {
+        id: newTeacherId,
+        username,
+        name,
+        surname,
+        email,
+        phone,
+        address,
+        img,
+        bloodType,
+        sex,
+        birthday: parsedBirthday,
+        ...(subjectIds && subjectIds.length > 0
+          ? { subjects: { connect: subjectIds.map((id: string) => ({ id })) } }
+          : {}),
+        ...(lessonIds && lessonIds.length > 0
+          ? { lessons: { connect: lessonIds.map((id: string) => ({ id })) } }
+          : {}),
+        ...(classIds && classIds.length > 0
+          ? { classes: { connect: classIds.map((id: string) => ({ id })) } }
+          : {}),
+      },
+    });
+
+    res.status(201).json(teacher);
+  } catch (error) {
+    console.error("Error creating teacher:", error);
+    res.status(500).json({ error: "Failed to create teacher" });
+  }
+};
 
 // ✅ Get All Teachers
 export const getTeachers = async (req: Request, res: Response) => {
