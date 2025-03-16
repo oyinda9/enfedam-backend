@@ -38,7 +38,7 @@ model Student {
 }
 
 model Teacher {
-  id        String    @id
+  id        String     @id @default(uuid())
   username  String    @unique
   name      String
   surname   String

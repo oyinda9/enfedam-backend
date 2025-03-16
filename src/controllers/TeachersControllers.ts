@@ -50,7 +50,7 @@ export const createTeacher = async (
     // Create teacher
     const teacher = await prisma.teacher.create({
       data: {
-        id: newTeacherId,
+        id: crypto.randomUUID(),
         username,
         name,
         surname,
