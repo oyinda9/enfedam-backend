@@ -36,7 +36,6 @@ export const createTeacher = async (
       return;
     }
 
-
     // Validate birthday format
     const parsedBirthday = new Date(birthday);
     if (isNaN(parsedBirthday.getTime())) {
@@ -87,8 +86,10 @@ export const getTeachers = async (req: Request, res: Response) => {
   }
 };
 
-
-export const getTeacherById = async (req: Request, res: Response): Promise<void> => {
+export const getTeacherById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
     console.log("Received request for teacher ID:", id); // Debugging
@@ -126,8 +127,6 @@ export const getTeacherById = async (req: Request, res: Response): Promise<void>
     res.status(500).json({ error: "Failed to fetch teacher" });
   }
 };
-
-
 
 // ✅ Update a Teacher
 export const updateTeacher = async (req: Request, res: Response) => {

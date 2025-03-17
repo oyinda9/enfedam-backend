@@ -16,7 +16,7 @@ const router = express.Router();
 
 // Student routes
 router.get("/", getAllStudents);
-// router.get('/:id', getStudentById);
+router.get("/:id" , getStudentById);
 router.post(
   "/",
   authenticateAdmin,

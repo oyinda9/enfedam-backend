@@ -7,6 +7,7 @@ const prisma = new PrismaClient();
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
     const students = await prisma.student.findMany({
+      //provides details of the parent class and grade of the student
       include: { parent: true, class: true, grade: true },
     });
     res.json(students);
@@ -16,7 +17,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
 };
 
 // Get a student by ID
-export const getStudentById = async (req: Request, res: Response) => {
+export const getStudentById = async (req: Request, res: Response) : Promise<void>=> {
   const { id } = req.params;
   try {
     const student = await prisma.student.findUnique({
@@ -24,7 +25,8 @@ export const getStudentById = async (req: Request, res: Response) => {
       include: { parent: true, class: true, grade: true },
     });
     if (!student) {
-      return res.status(404).json({ error: "Student not found" });
+       res.status(404).json({ error: "Student not found" });
+       return
     }
     res.json(student);
   } catch (error) {
@@ -33,8 +35,11 @@ export const getStudentById = async (req: Request, res: Response) => {
 };
 
 // Create a new student
-// Create a new student
-export const createStudent = async (req: Request, res: Response) : Promise<void>=> {
+
+export const createStudent = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const {
     username,
     name,
@@ -58,15 +63,17 @@ export const createStudent = async (req: Request, res: Response) : Promise<void>
     });
 
     if (existingStudent) {
-       res.status(400).json({ error: "Student with this username already exists" });
-       return
+      res
+        .status(400)
+        .json({ error: "Student with this username already exists" });
+      return;
     }
 
     // Validate birthday format
     const parsedBirthday = new Date(birthday);
     if (isNaN(parsedBirthday.getTime())) {
-       res.status(400).json({ error: "Invalid birthday format" });
-       return
+      res.status(400).json({ error: "Invalid birthday format" });
+      return;
     }
 
     // Validate if classId exists
@@ -74,8 +81,8 @@ export const createStudent = async (req: Request, res: Response) : Promise<void>
     if (classId) {
       classData = await prisma.class.findUnique({ where: { id: classId } });
       if (!classData) {
-         res.status(404).json({ error: "Class not found" });
-         return
+        res.status(404).json({ error: "Class not found" });
+        return;
       }
     }
 
@@ -84,8 +91,8 @@ export const createStudent = async (req: Request, res: Response) : Promise<void>
     if (gradeId) {
       gradeData = await prisma.grade.findUnique({ where: { id: gradeId } });
       if (!gradeData) {
-         res.status(404).json({ error: "Grade not found" });
-         return
+        res.status(404).json({ error: "Grade not found" });
+        return;
       }
     }
 
@@ -94,8 +101,8 @@ export const createStudent = async (req: Request, res: Response) : Promise<void>
     if (parentId) {
       parentData = await prisma.parent.findUnique({ where: { id: parentId } });
       if (!parentData) {
-         res.status(404).json({ error: "Parent not found" });
-         return
+        res.status(404).json({ error: "Parent not found" });
+        return;
       }
     }
 
@@ -122,15 +129,14 @@ export const createStudent = async (req: Request, res: Response) : Promise<void>
       data: studentData,
     });
 
-     res.status(201).json(student);
-     return
+    res.status(201).json(student);
+    return;
   } catch (error) {
     console.error(error);
-     res.status(500).json({ error: "Failed to create student" });
-     return
+    res.status(500).json({ error: "Failed to create student" });
+    return;
   }
 };
-
 
 // Update a student
 export const updateStudent = async (req: Request, res: Response) => {
