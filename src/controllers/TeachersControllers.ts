@@ -99,10 +99,21 @@ export const getTeacherById = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    // const teacher = await prisma.teacher.findUnique({
+    //   where: { id },
+    // });
     const teacher = await prisma.teacher.findUnique({
       where: { id },
+      include: {
+        classes: {
+          include: {
+            students: true, // Assuming a Class model has a students relation
+          },
+        },
+        subjects: true, // Fetching subjects taught by the teacher
+        lessons: true, // Fetching lessons taken by the teacher
+      },
     });
-
     if (!teacher) {
       console.log("No teacher found with ID:", id);
       res.status(404).json({ error: "Teacher not found" });
