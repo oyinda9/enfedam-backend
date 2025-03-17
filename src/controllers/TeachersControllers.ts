@@ -36,9 +36,6 @@ export const createTeacher = async (
       return;
     }
 
-    // Generate a new teacher ID
-    const count = await prisma.teacher.count();
-    const newTeacherId = `teacher${count + 1}`;
 
     // Validate birthday format
     const parsedBirthday = new Date(birthday);
@@ -90,19 +87,36 @@ export const getTeachers = async (req: Request, res: Response) => {
   }
 };
 
-// ✅ Get a Single Teacher by ID
-export const getTeacherById = async (req: Request, res: Response) => {
+
+export const getTeacherById = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const teacher = await prisma.teacher.findUnique({ where: { id } });
+    console.log("Received request for teacher ID:", id); // Debugging
 
-    if (!teacher) return res.status(404).json({ error: "Teacher not found" });
+    if (!id) {
+      console.log("ID is missing in request");
+      res.status(400).json({ error: "Missing teacher ID" });
+      return;
+    }
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { id },
+    });
+
+    if (!teacher) {
+      console.log("No teacher found with ID:", id);
+      res.status(404).json({ error: "Teacher not found" });
+      return;
+    }
 
     res.status(200).json(teacher);
   } catch (error) {
+    console.error("Error fetching teacher:", error);
     res.status(500).json({ error: "Failed to fetch teacher" });
   }
 };
+
+
 
 // ✅ Update a Teacher
 export const updateTeacher = async (req: Request, res: Response) => {

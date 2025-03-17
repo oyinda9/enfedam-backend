@@ -23,7 +23,7 @@ app.use("/students", StudentRoutes);
 app.use("/parents", ParentRoutes);
 app.use("/grade", GradeRoutes);
 app.use("/admin", AdminRoutes);
-app.use("/teacher", TeacherRoutes);
+app.use("/teachers", TeacherRoutes); 
 app.use("/lesson", LessonRoutes);
 app.use("/results", ResultRoutes);
 app.use("/class", ClassRoutes);
