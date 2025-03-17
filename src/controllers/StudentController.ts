@@ -33,7 +33,8 @@ export const getStudentById = async (req: Request, res: Response) => {
 };
 
 // Create a new student
-export const createStudent = async (req: Request, res: Response) => {
+// Create a new student
+export const createStudent = async (req: Request, res: Response) : Promise<void>=> {
   const {
     username,
     name,
@@ -51,31 +52,85 @@ export const createStudent = async (req: Request, res: Response) => {
   } = req.body;
 
   try {
-    const student = await prisma.student.create({
-      data: {
-        id: crypto.randomUUID(),
-        username,
-        name,
-        surname,
-        email: email || null,
-        phone: phone || null,
-        address,
-        img: img || null,
-        bloodType,
-        sex,
-        birthday: new Date(birthday),
-        ...(parentId && { parent: { connect: { id: parentId } } }),
-        ...(classId && { class: { connect: { id: classId } } }),
-        ...(gradeId && { grade: { connect: { id: gradeId } } }),
-      },
+    // Check if the username already exists
+    const existingStudent = await prisma.student.findUnique({
+      where: { username },
     });
 
-    res.status(201).json(student);
+    if (existingStudent) {
+       res.status(400).json({ error: "Student with this username already exists" });
+       return
+    }
+
+    // Validate birthday format
+    const parsedBirthday = new Date(birthday);
+    if (isNaN(parsedBirthday.getTime())) {
+       res.status(400).json({ error: "Invalid birthday format" });
+       return
+    }
+
+    // Validate if classId exists
+    let classData = null;
+    if (classId) {
+      classData = await prisma.class.findUnique({ where: { id: classId } });
+      if (!classData) {
+         res.status(404).json({ error: "Class not found" });
+         return
+      }
+    }
+
+    // Validate if gradeId exists
+    let gradeData = null;
+    if (gradeId) {
+      gradeData = await prisma.grade.findUnique({ where: { id: gradeId } });
+      if (!gradeData) {
+         res.status(404).json({ error: "Grade not found" });
+         return
+      }
+    }
+
+    // Validate if parentId exists
+    let parentData = null;
+    if (parentId) {
+      parentData = await prisma.parent.findUnique({ where: { id: parentId } });
+      if (!parentData) {
+         res.status(404).json({ error: "Parent not found" });
+         return
+      }
+    }
+
+    const studentData: any = {
+      id: crypto.randomUUID(),
+      username,
+      name,
+      surname,
+      email: email || null,
+      phone: phone || null,
+      address,
+      img: img || null,
+      bloodType,
+      sex: sex.toUpperCase(),
+      birthday: parsedBirthday,
+    };
+
+    // Add only if the related entity exists
+    if (parentData) studentData.parent = { connect: { id: parentId } };
+    if (classData) studentData.class = { connect: { id: classId } };
+    if (gradeData) studentData.grade = { connect: { id: gradeId } };
+
+    const student = await prisma.student.create({
+      data: studentData,
+    });
+
+     res.status(201).json(student);
+     return
   } catch (error) {
     console.error(error);
-    res.status(400).json({ error: "Failed to create student" });
+     res.status(500).json({ error: "Failed to create student" });
+     return
   }
 };
+
 
 // Update a student
 export const updateStudent = async (req: Request, res: Response) => {
