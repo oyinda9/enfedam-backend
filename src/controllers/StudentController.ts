@@ -64,9 +64,9 @@ export const createStudent = async (req: Request, res: Response) => {
         bloodType,
         sex,
         birthday: new Date(birthday),
-        parent: { connect: { id: parentId } },
-        class: { connect: { id: classId } },
-        grade: { connect: { id: gradeId } },
+        ...(parentId && { parent: { connect: { id: parentId } } }),
+        ...(classId && { class: { connect: { id: classId } } }),
+        ...(gradeId && { grade: { connect: { id: gradeId } } }),
       },
     });
 
