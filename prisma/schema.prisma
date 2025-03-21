@@ -6,6 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 model Admin {
   id       String @id @default(uuid())
   username String @unique
@@ -27,7 +28,6 @@ model Student {
   createdAt   DateTime     @default(now())
   parentId    String?
   classId     Int
-
   birthday    DateTime
   role        Role         @default(STUDENT)
   attendances Attendance[]
@@ -37,7 +37,7 @@ model Student {
 }
 
 model Teacher {
-  id        String     @id @default(uuid())
+  id        String    @id @default(uuid())
   username  String    @unique
   name      String
   surname   String
@@ -67,8 +67,6 @@ model Parent {
   role      Role      @default(USER)
   students  Student[]
 }
-
-
 
 model Class {
   id            Int            @id @default(autoincrement())
