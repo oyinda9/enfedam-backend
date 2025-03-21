@@ -1,5 +1,6 @@
-import { Day, PrismaClient, UserSex } from "@prisma/client";
+import { Day, PrismaClient, UserSex, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -17,7 +18,6 @@ async function main() {
   await prisma.teacher.deleteMany();
   await prisma.subject.deleteMany();
   await prisma.class.deleteMany();
-
   await prisma.admin.deleteMany();
   await prisma.event.deleteMany();
   await prisma.announcement.deleteMany();
@@ -29,31 +29,30 @@ async function main() {
   // Admin
   const admin = await prisma.admin.create({
     data: {
-      id: "some-unique-id", // If your schema requires an ID
       username: "admin",
-      password: hashedPassword, // Ensure this is included
+      password: hashedPassword,
+      role: Role.ADMIN,
     },
   });
-
-
- ;
 
   // Class
   const schoolClass = await prisma.class.create({
     data: {
       name: "1A",
-     
       capacity: 20,
     },
   });
 
   // Subject
-  const subject = await prisma.subject.create({ data: { name: "Mathematics" } });
+  const subject = await prisma.subject.create({
+    data: {
+      name: "Mathematics",
+    },
+  });
 
   // Teacher
   const teacher = await prisma.teacher.create({
     data: {
-      id: "teacher1",
       username: "teacher1",
       name: "John",
       surname: "Doe",
@@ -62,9 +61,10 @@ async function main() {
       address: "123 Main St",
       bloodType: "A+",
       sex: UserSex.MALE,
+      birthday: new Date("1990-01-01"),
+      role: Role.TEACHER,
       subjects: { connect: { id: subject.id } },
       classes: { connect: { id: schoolClass.id } },
-      birthday: new Date("1990-01-01"),
     },
   });
 
@@ -73,31 +73,30 @@ async function main() {
     data: {
       name: "Algebra Basics",
       day: Day.MONDAY,
-      startTime: new Date(),
-      endTime: new Date(),
-      subjectId: subject.id,
-      classId: schoolClass.id,
-      teacherId: teacher.id,
+      startTime: new Date("2023-10-01T09:00:00Z"),
+      endTime: new Date("2023-10-01T10:00:00Z"),
+      subject: { connect: { id: subject.id } },
+      class: { connect: { id: schoolClass.id } },
+      teacher: { connect: { id: teacher.id } },
     },
   });
 
   // Parent
   const parent = await prisma.parent.create({
     data: {
-      id: "parent1",
       username: "parent1",
       name: "Jane",
       surname: "Doe",
       email: "parent@example.com",
       phone: "987-654-3210",
       address: "456 Oak St",
+      role: Role.USER,
     },
   });
 
   // Student
   const student = await prisma.student.create({
     data: {
-      id: "student1",
       username: "student1",
       name: "Alice",
       surname: "Doe",
@@ -106,10 +105,10 @@ async function main() {
       address: "789 Maple St",
       bloodType: "O-",
       sex: UserSex.FEMALE,
-      parentId: parent.id,
-     
-      classId: schoolClass.id,
       birthday: new Date("2012-01-01"),
+      role: Role.STUDENT,
+      parent: { connect: { id: parent.id } },
+      class: { connect: { id: schoolClass.id } },
     },
   });
 
@@ -117,9 +116,9 @@ async function main() {
   const exam = await prisma.exam.create({
     data: {
       title: "Midterm Exam",
-      startTime: new Date(),
-      endTime: new Date(),
-      lessonId: lesson.id,
+      startTime: new Date("2023-11-01T09:00:00Z"),
+      endTime: new Date("2023-11-01T11:00:00Z"),
+      lesson: { connect: { id: lesson.id } },
     },
   });
 
@@ -127,9 +126,9 @@ async function main() {
   const assignment = await prisma.assignment.create({
     data: {
       title: "Homework 1",
-      startDate: new Date(),
-      dueDate: new Date(),
-      lessonId: lesson.id,
+      startDate: new Date("2023-10-02T00:00:00Z"),
+      dueDate: new Date("2023-10-09T23:59:59Z"),
+      lesson: { connect: { id: lesson.id } },
     },
   });
 
@@ -137,18 +136,18 @@ async function main() {
   await prisma.result.create({
     data: {
       score: 85,
-      studentId: student.id,
-      examId: exam.id,
+      student: { connect: { id: student.id } },
+      exam: { connect: { id: exam.id } },
     },
   });
 
   // Attendance
   await prisma.attendance.create({
     data: {
-      date: new Date(),
+      date: new Date("2023-10-01T09:00:00Z"),
       present: true,
-      studentId: student.id,
-      lessonId: lesson.id,
+      student: { connect: { id: student.id } },
+      lesson: { connect: { id: lesson.id } },
     },
   });
 
@@ -157,9 +156,9 @@ async function main() {
     data: {
       title: "School Sports Day",
       description: "A fun-filled day of sports activities.",
-      startTime: new Date(),
-      endTime: new Date(),
-      classId: schoolClass.id,
+      startTime: new Date("2023-12-01T10:00:00Z"),
+      endTime: new Date("2023-12-01T18:00:00Z"),
+      class: { connect: { id: schoolClass.id } },
     },
   });
 
@@ -168,8 +167,8 @@ async function main() {
     data: {
       title: "Parent-Teacher Meeting",
       description: "Meeting scheduled for next week.",
-      date: new Date(),
-      classId: schoolClass.id,
+      date: new Date("2023-10-30T00:00:00Z"),
+      class: { connect: { id: schoolClass.id } },
     },
   });
 
@@ -181,7 +180,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error(e);
+    console.error("Error seeding data:", e);
     await prisma.$disconnect();
     process.exit(1);
   });

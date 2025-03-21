@@ -3,10 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 // Create a new class
-export const createClass = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const createClass = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, capacity, supervisorId } = req.body;
 
@@ -20,17 +17,24 @@ export const createClass = async (
       return;
     }
 
+    // Validate if supervisorId exists
+    if (supervisorId) {
+      const supervisorExists = await prisma.teacher.findUnique({
+        where: { id: supervisorId },
+      });
+
+      if (!supervisorExists) {
+        res.status(404).json({ error: "Supervisor not found" });
+        return;
+      }
+    }
+
     // Create the class
     const newClass = await prisma.class.create({
       data: {
         name,
         capacity,
-        supervisor: supervisorId
-          ? { connect: { id: supervisorId } }
-          : undefined,
-      },
-      include: {
-        supervisor: true,
+        supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
       },
     });
 
@@ -48,7 +52,6 @@ export const getAllClasses = async (req: Request, res: Response) => {
         supervisor: true,
         lessons: true,
         students: true,
-
         events: true,
         announcements: true,
       },
