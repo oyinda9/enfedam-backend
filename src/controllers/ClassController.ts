@@ -34,7 +34,7 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
       data: {
         name,
         capacity,
-        supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
+        supervisor: supervisorId ? { connect: { id: supervisorId } } ,
       },
     });
 
