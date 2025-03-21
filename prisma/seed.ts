@@ -17,33 +17,26 @@ async function main() {
   await prisma.teacher.deleteMany();
   await prisma.subject.deleteMany();
   await prisma.class.deleteMany();
-  await prisma.grade.deleteMany();
   await prisma.admin.deleteMany();
   await prisma.event.deleteMany();
   await prisma.announcement.deleteMany();
 
   console.log("Database cleared.");
-
   console.log("Seeding new data...");
 
   // Admin
   const admin = await prisma.admin.create({
     data: {
-      id: "some-unique-id", // If your schema requires an ID
       username: "admin",
       password: hashedPassword, // Ensure this is included
     },
   });
 
-  // Grade
-  const grade = await prisma.grade.create({ data: { level: 1 } });
-
-  // Class
+  // Create a class before using it
   const schoolClass = await prisma.class.create({
     data: {
-      name: "1A",
-      gradeId: grade.id,
-      capacity: 20,
+      name: "Class A",
+      capacity: 30,
     },
   });
 
@@ -53,7 +46,6 @@ async function main() {
   // Teacher
   const teacher = await prisma.teacher.create({
     data: {
-      id: "teacher1",
       username: "teacher1",
       name: "John",
       surname: "Doe",
@@ -63,7 +55,7 @@ async function main() {
       bloodType: "A+",
       sex: UserSex.MALE,
       subjects: { connect: { id: subject.id } },
-      classes: { connect: { id: schoolClass.id } },
+      classes: { connect: { id: schoolClass.id } }, // Now schoolClass exists
       birthday: new Date("1990-01-01"),
     },
   });
@@ -84,7 +76,6 @@ async function main() {
   // Parent
   const parent = await prisma.parent.create({
     data: {
-      id: "parent1",
       username: "parent1",
       name: "Jane",
       surname: "Doe",
@@ -97,7 +88,6 @@ async function main() {
   // Student
   const student = await prisma.student.create({
     data: {
-      id: "student1",
       username: "student1",
       name: "Alice",
       surname: "Doe",
@@ -107,9 +97,8 @@ async function main() {
       bloodType: "O-",
       sex: UserSex.FEMALE,
       parentId: parent.id,
-      gradeId: grade.id,
-      classId: schoolClass.id,
       birthday: new Date("2012-01-01"),
+      classId: schoolClass.id, // Assign student to class
     },
   });
 

@@ -3,7 +3,6 @@ import { PrismaClient } from "@prisma/client";
 import cors from "cors";
 import StudentRoutes from "./routes/StudentRoutes";
 import ParentRoutes from "./routes/ParentRoutes";
-import GradeRoutes from "./routes/GradeRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
 import TeacherRoutes from "./routes/TeacherRoutes";
 import LessonRoutes from "./routes/LessonRoutes";
@@ -21,7 +20,6 @@ app.use(express.json());
 // Use student routes
 app.use("/students", StudentRoutes);
 app.use("/parents", ParentRoutes);
-app.use("/grade", GradeRoutes);
 app.use("/admin", AdminRoutes);
 app.use("/teachers", TeacherRoutes); 
 app.use("/lesson", LessonRoutes);
