@@ -3,10 +3,10 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPassword = await bcrypt.hash("adminpassword", 10);
+  const hashedPassword = await bcrypt.hash("adminpassword", 10); // Hash the password
   console.log("Resetting database...");
 
-  // Clear all tables
+  // Clear all tables (order matters due to foreign key constraints)
   await prisma.result.deleteMany();
   await prisma.attendance.deleteMany();
   await prisma.assignment.deleteMany();
@@ -17,29 +17,33 @@ async function main() {
   await prisma.teacher.deleteMany();
   await prisma.subject.deleteMany();
   await prisma.class.deleteMany();
+
   await prisma.admin.deleteMany();
   await prisma.event.deleteMany();
   await prisma.announcement.deleteMany();
 
   console.log("Database cleared.");
+
   console.log("Seeding new data...");
 
   // Admin
   const admin = await prisma.admin.create({
     data: {
+      id: "some-unique-id", // If your schema requires an ID
       username: "admin",
-      password: hashedPassword,
+      password: hashedPassword, // Ensure this is included
     },
   });
 
+  // Grade
+ ;
 
-
-  // Create a class
+  // Class
   const schoolClass = await prisma.class.create({
     data: {
-      name: "Class A",
-      capacity: 30,
-    
+      name: "1A",
+     
+      capacity: 20,
     },
   });
 
@@ -49,6 +53,7 @@ async function main() {
   // Teacher
   const teacher = await prisma.teacher.create({
     data: {
+      id: "teacher1",
       username: "teacher1",
       name: "John",
       surname: "Doe",
@@ -79,6 +84,7 @@ async function main() {
   // Parent
   const parent = await prisma.parent.create({
     data: {
+      id: "parent1",
       username: "parent1",
       name: "Jane",
       surname: "Doe",
@@ -91,6 +97,7 @@ async function main() {
   // Student
   const student = await prisma.student.create({
     data: {
+      id: "student1",
       username: "student1",
       name: "Alice",
       surname: "Doe",
@@ -100,9 +107,9 @@ async function main() {
       bloodType: "O-",
       sex: UserSex.FEMALE,
       parentId: parent.id,
-      birthday: new Date("2012-01-01"),
-      classId: schoolClass.id,
      
+      classId: schoolClass.id,
+      birthday: new Date("2012-01-01"),
     },
   });
 

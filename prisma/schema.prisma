@@ -6,7 +6,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model Admin {
   id       String @id @default(uuid())
   username String @unique
@@ -28,18 +27,17 @@ model Student {
   createdAt   DateTime     @default(now())
   parentId    String?
   classId     Int
-  // gradeId     Int
+
   birthday    DateTime
   role        Role         @default(STUDENT)
   attendances Attendance[]
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
-  // grade       Grade        @relation(fields: [gradeId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
 }
 
 model Teacher {
-  id        String    @id @default(uuid())
+  id        String     @id @default(uuid())
   username  String    @unique
   name      String
   surname   String
@@ -70,25 +68,18 @@ model Parent {
   students  Student[]
 }
 
-// model Grade {
-//   id       Int       @id @default(autoincrement())
-//   level    Int       @unique
-//   classess Class[]
-//   students Student[]
-// }
+
 
 model Class {
-  id           Int     @id @default(autoincrement())
-  name         String  @unique
-  capacity     Int
-  supervisorId String?
-
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  capacity      Int
+  supervisorId  String?
   announcements Announcement[]
-
-  supervisor Teacher?  @relation(fields: [supervisorId], references: [id])
-  events     Event[]
-  lessons    Lesson[]
-  students   Student[]
+  supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
+  events        Event[]
+  lessons       Lesson[]
+  students      Student[]
 }
 
 model Subject {

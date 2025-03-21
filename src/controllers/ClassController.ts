@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-
 // Create a new class
-export const createClass = async (req: Request, res: Response): Promise<void> => {
+export const createClass = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { name, capacity, supervisorId } = req.body;
 
@@ -23,7 +25,9 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
       data: {
         name,
         capacity,
-        supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
+        supervisor: supervisorId
+          ? { connect: { id: supervisorId } }
+          : undefined,
       },
       include: {
         supervisor: true,
@@ -36,8 +40,7 @@ export const createClass = async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ error: "Failed to create class" });
   }
 };
-
-// Get all classes
+//get all classes
 export const getAllClasses = async (req: Request, res: Response) => {
   try {
     const classes = await prisma.class.findMany({
@@ -45,27 +48,23 @@ export const getAllClasses = async (req: Request, res: Response) => {
         supervisor: true,
         lessons: true,
         students: true,
+
         events: true,
         announcements: true,
       },
     });
     res.json(classes);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch classes" });
+    res.status(500).json({ error: "failed to fetch students" });
   }
 };
 
-// Get a class by ID
-export const getClassById = async (req: Request, res: Response): Promise<void> => {
+// Get a classes by ID
+export const getclassesById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const classId = Number(id);
   try {
-    const classId = Number(req.params.id);
-
-    if (isNaN(classId)) {
-       res.status(400).json({ error: "Invalid class ID" });return
-
-    }
-
-    const classData = await prisma.class.findUnique({
+    const classes = await prisma.class.findUnique({
       where: { id: classId },
       include: {
         supervisor: true,
@@ -75,28 +74,19 @@ export const getClassById = async (req: Request, res: Response): Promise<void> =
         announcements: true,
       },
     });
-
-    if (!classData) {
-       res.status(404).json({ error: "Class not found" });
-       return
+    if (!classes) {
+      return res.status(404).json({ error: "classes not found" });
     }
-
-    res.json(classData);
+    res.json(classes);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch class" });
+    res.status(500).json({ error: "Failed to fetch classes" });
   }
 };
-
-// Update a class
-export const updateClass = async (req: Request, res: Response) : Promise<void> => {
+//update a class
+export const updateClass = async (req: Request, res: Response) => {
   try {
-    const classId = Number(req.params.id);
-
-    if (isNaN(classId)) {
-       res.status(400).json({ error: "Invalid class ID" });
-       return
-    }
-
+    const { id } = req.params;
+    const classId = Number(id);
     const updatedClass = await prisma.class.update({
       where: { id: classId },
       data: req.body,
@@ -104,23 +94,17 @@ export const updateClass = async (req: Request, res: Response) : Promise<void> =
 
     res.status(200).json(updatedClass);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update class" });
+    res.status(500).json({ error: "Failed to update teacher" });
   }
 };
 
 // Delete a class
-export const deleteClass = async (req: Request, res: Response): Promise<void> => {
+export const deleteClass = async (req: Request, res: Response) => {
   try {
-    const classId = Number(req.params.id);
-
-    if (isNaN(classId)) {
-       res.status(400).json({ error: "Invalid class ID" });
-       return
-    }
-
-    await prisma.class.delete({ where: { id: classId } });
+    const { id } = req.params;
+    await prisma.teacher.delete({ where: { id } });
     res.status(200).json({ message: "Class deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete class" });
+    res.status(500).json({ error: "Failed to delete Class" });
   }
 };
