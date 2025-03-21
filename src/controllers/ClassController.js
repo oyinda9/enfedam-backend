@@ -15,7 +15,7 @@ const prisma = new client_1.PrismaClient();
 // Create a new class
 const createClass = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { name, capacity, supervisorId, gradeId } = req.body;
+        const { name, capacity, supervisorId } = req.body;
         // Check if class name already exists
         const existingClass = yield prisma.class.findUnique({
             where: { name },
@@ -32,11 +32,11 @@ const createClass = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 supervisor: supervisorId
                     ? { connect: { id: supervisorId } }
                     : undefined,
-                grade: { connect: { id: gradeId } },
+               
             },
             include: {
                 supervisor: true,
-                grade: true,
+               
             },
         });
         res.status(201).json(newClass);
@@ -55,7 +55,7 @@ const getAllClasses = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 supervisor: true,
                 lessons: true,
                 students: true,
-                grade: true,
+              
                 events: true,
                 announcements: true,
             },
@@ -78,7 +78,7 @@ const getclassesById = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 supervisor: true,
                 lessons: true,
                 students: true,
-                grade: true,
+               
                 events: true,
                 announcements: true,
             },

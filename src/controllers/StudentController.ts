@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export const getAllStudents = async (req: Request, res: Response) => {
   try {
     const students = await prisma.student.findMany({
-      //provides details of the parent class and grade of the student
+    
       include: { parent: true, class: true },
     });
     res.json(students);
@@ -142,7 +142,6 @@ export const updateStudent = async (req: Request, res: Response) => {
     sex,
     parentId,
     classId,
-    gradeId,
     birthday,
   } = req.body;
   try {

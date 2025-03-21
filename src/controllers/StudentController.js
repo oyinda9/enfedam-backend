@@ -16,7 +16,7 @@ const prisma = new client_1.PrismaClient();
 const getAllStudents = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const students = yield prisma.student.findMany({
-            include: { parent: true, class: true, grade: true },
+            include: { parent: true, class: true },
         });
         res.json(students);
     }
@@ -31,7 +31,7 @@ const getStudentById = (req, res) => __awaiter(void 0, void 0, void 0, function*
     try {
         const student = yield prisma.student.findUnique({
             where: { id },
-            include: { parent: true, class: true, grade: true },
+            include: { parent: true, class: true },
         });
         if (!student) {
             return res.status(404).json({ error: "Student not found" });
@@ -45,7 +45,7 @@ const getStudentById = (req, res) => __awaiter(void 0, void 0, void 0, function*
 exports.getStudentById = getStudentById;
 // Create a new student
 const createStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username, name, surname, email, phone, address, img, bloodType, sex, parentId, classId, gradeId, birthday, } = req.body;
+    const { username, name, surname, email, phone, address, img, bloodType, sex, parentId, classId, birthday, } = req.body;
     try {
         const student = yield prisma.student.create({
             data: {
@@ -62,7 +62,7 @@ const createStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 birthday: new Date(birthday),
                 parent: { connect: { id: parentId } },
                 class: { connect: { id: classId } },
-                grade: { connect: { id: gradeId } },
+               
             },
         });
         res.status(201).json(student);
@@ -76,7 +76,7 @@ exports.createStudent = createStudent;
 // Update a student
 const updateStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const { username, name, surname, email, phone, address, img, bloodType, sex, parentId, classId, gradeId, birthday, } = req.body;
+    const { username, name, surname, email, phone, address, img, bloodType, sex, parentId, classId,  birthday, } = req.body;
     try {
         const student = yield prisma.student.update({
             where: { id },
@@ -92,7 +92,7 @@ const updateStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 sex,
                 parentId,
                 classId,
-                gradeId,
+              
                 birthday,
             },
         });

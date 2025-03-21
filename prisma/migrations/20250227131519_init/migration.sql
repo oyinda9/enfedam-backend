@@ -31,7 +31,6 @@ CREATE TABLE "Student" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "parentId" TEXT NOT NULL,
     "classId" INTEGER NOT NULL,
-    "gradeId" INTEGER NOT NULL,
     "birthday" TIMESTAMP(3) NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'STUDENT',
 
@@ -72,13 +71,7 @@ CREATE TABLE "Parent" (
     CONSTRAINT "Parent_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "Grade" (
-    "id" SERIAL NOT NULL,
-    "level" INTEGER NOT NULL,
 
-    CONSTRAINT "Grade_pkey" PRIMARY KEY ("id")
-);
 
 -- CreateTable
 CREATE TABLE "Class" (
@@ -86,7 +79,7 @@ CREATE TABLE "Class" (
     "name" TEXT NOT NULL,
     "capacity" INTEGER NOT NULL,
     "supervisorId" TEXT,
-    "gradeId" INTEGER NOT NULL,
+   
 
     CONSTRAINT "Class_pkey" PRIMARY KEY ("id")
 );
@@ -218,8 +211,7 @@ CREATE UNIQUE INDEX "Parent_email_key" ON "Parent"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "Parent_phone_key" ON "Parent"("phone");
 
--- CreateIndex
-CREATE UNIQUE INDEX "Grade_level_key" ON "Grade"("level");
+
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Class_name_key" ON "Class"("name");
