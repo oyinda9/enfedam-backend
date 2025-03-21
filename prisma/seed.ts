@@ -3,10 +3,10 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPassword = await bcrypt.hash("adminpassword", 10); // Hash the password
+  const hashedPassword = await bcrypt.hash("adminpassword", 10);
   console.log("Resetting database...");
 
-  // Clear all tables (order matters due to foreign key constraints)
+  // Clear all tables
   await prisma.result.deleteMany();
   await prisma.attendance.deleteMany();
   await prisma.assignment.deleteMany();
@@ -28,15 +28,23 @@ async function main() {
   const admin = await prisma.admin.create({
     data: {
       username: "admin",
-      password: hashedPassword, // Ensure this is included
+      password: hashedPassword,
     },
   });
 
-  // Create a class before using it
+  // Create a grade
+  const grade = await prisma.grade.create({
+    data: {
+      name: "Grade 1",
+    },
+  });
+
+  // Create a class
   const schoolClass = await prisma.class.create({
     data: {
       name: "Class A",
       capacity: 30,
+      gradeId: grade.id, // Required field
     },
   });
 
@@ -55,7 +63,7 @@ async function main() {
       bloodType: "A+",
       sex: UserSex.MALE,
       subjects: { connect: { id: subject.id } },
-      classes: { connect: { id: schoolClass.id } }, // Now schoolClass exists
+      classes: { connect: { id: schoolClass.id } },
       birthday: new Date("1990-01-01"),
     },
   });
@@ -98,7 +106,8 @@ async function main() {
       sex: UserSex.FEMALE,
       parentId: parent.id,
       birthday: new Date("2012-01-01"),
-      classId: schoolClass.id, // Assign student to class
+      classId: schoolClass.id,
+      gradeId: grade.id, // Required field
     },
   });
 
