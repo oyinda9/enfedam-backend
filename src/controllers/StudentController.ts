@@ -52,7 +52,6 @@ export const createStudent = async (
     sex,
     parentId,
     classId,
-    gradeId,
     birthday,
   } = req.body;
 
@@ -86,16 +85,6 @@ export const createStudent = async (
       }
     }
 
-    // Validate if gradeId exists
-    let gradeData = null;
-    if (gradeId) {
-      gradeData = await prisma.grade.findUnique({ where: { id: gradeId } });
-      if (!gradeData) {
-        res.status(404).json({ error: "Grade not found" });
-        return;
-      }
-    }
-
     // Validate if parentId exists
     let parentData = null;
     if (parentId) {
@@ -123,7 +112,7 @@ export const createStudent = async (
     // Add only if the related entity exists
     if (parentData) studentData.parent = { connect: { id: parentId } };
     if (classData) studentData.class = { connect: { id: classId } };
-    if (gradeData) studentData.grade = { connect: { id: gradeId } };
+  
 
     const student = await prisma.student.create({
       data: studentData,

@@ -27,13 +27,13 @@ model Student {
   createdAt   DateTime     @default(now())
   parentId    String?
   classId     Int
-  gradeId     Int
+  // gradeId     Int
   birthday    DateTime
   role        Role         @default(STUDENT)
   attendances Attendance[]
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
-  grade       Grade        @relation(fields: [gradeId], references: [id])
+  // grade       Grade        @relation(fields: [gradeId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
 }
 
@@ -69,21 +69,21 @@ model Parent {
   students  Student[]
 }
 
-model Grade {
-  id       Int       @id @default(autoincrement())
-  level    Int       @unique
-  classess Class[]
-  students Student[]
-}
+// model Grade {
+//   id       Int       @id @default(autoincrement())
+//   level    Int       @unique
+//   classess Class[]
+//   students Student[]
+// }
 
 model Class {
   id            Int            @id @default(autoincrement())
   name          String         @unique
   capacity      Int
   supervisorId  String?
-  gradeId       Int
+  // gradeId        Int?
   announcements Announcement[]
-  grade         Grade          @relation(fields: [gradeId], references: [id])
+  // grade         Grade?          @relation(fields: [gradeId], references: [id])
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   events        Event[]
   lessons       Lesson[]
