@@ -32,19 +32,14 @@ async function main() {
     },
   });
 
-  // Create a grade
-  const grade = await prisma.grade.create({
-    data: {
-      name: "Grade 1",
-    },
-  });
+
 
   // Create a class
   const schoolClass = await prisma.class.create({
     data: {
       name: "Class A",
       capacity: 30,
-      gradeId: grade.id, // Required field
+    
     },
   });
 
@@ -107,7 +102,7 @@ async function main() {
       parentId: parent.id,
       birthday: new Date("2012-01-01"),
       classId: schoolClass.id,
-      gradeId: grade.id, // Required field
+     
     },
   });
 
