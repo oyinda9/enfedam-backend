@@ -25,7 +25,7 @@ function main() {
         yield prisma.teacher.deleteMany();
         yield prisma.subject.deleteMany();
         yield prisma.class.deleteMany();
-        yield prisma.grade.deleteMany();
+    
         yield prisma.admin.deleteMany();
         yield prisma.event.deleteMany();
         yield prisma.announcement.deleteMany();
@@ -35,16 +35,7 @@ function main() {
         const admin = yield prisma.admin.create({
             data: { id: "admin1", username: "admin1" },
         });
-        // Grade
-        const grade = yield prisma.grade.create({ data: { level: 1 } });
-        // Class
-        const schoolClass = yield prisma.class.create({
-            data: {
-                name: "1A",
-                gradeId: grade.id,
-                capacity: 20,
-            },
-        });
+       
         // Subject
         const subject = yield prisma.subject.create({ data: { name: "Mathematics" } });
         // Teacher
@@ -101,7 +92,7 @@ function main() {
                 bloodType: "O-",
                 sex: client_1.UserSex.FEMALE,
                 parentId: parent.id,
-                gradeId: grade.id,
+             
                 classId: schoolClass.id,
                 birthday: new Date("2012-01-01"),
             },
