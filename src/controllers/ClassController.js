@@ -32,11 +32,9 @@ const createClass = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 supervisor: supervisorId
                     ? { connect: { id: supervisorId } }
                     : undefined,
-               
             },
             include: {
                 supervisor: true,
-               
             },
         });
         res.status(201).json(newClass);
@@ -55,7 +53,6 @@ const getAllClasses = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 supervisor: true,
                 lessons: true,
                 students: true,
-              
                 events: true,
                 announcements: true,
             },
@@ -78,7 +75,6 @@ const getclassesById = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 supervisor: true,
                 lessons: true,
                 students: true,
-               
                 events: true,
                 announcements: true,
             },

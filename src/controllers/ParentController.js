@@ -44,7 +44,9 @@ const getAllParents = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.status(200).json(parents);
     }
     catch (error) {
-        res.status(500).json({ error: "Failed to fetch parents", details: error.message });
+        res
+            .status(500)
+            .json({ error: "Failed to fetch parents", details: error.message });
     }
 });
 exports.getAllParents = getAllParents;
@@ -56,11 +58,14 @@ const getParentById = (req, res) => __awaiter(void 0, void 0, void 0, function* 
             include: { students: true },
         });
         if (!parent)
-            return res.status(404).json({ error: "Parent not found" });
+            res.status(404).json({ error: "Parent not found" });
         res.status(200).json(parent);
+        return;
     }
     catch (error) {
-        res.status(500).json({ error: "Failed to fetch parent", details: error.message });
+        res
+            .status(500)
+            .json({ error: "Failed to fetch parent", details: error.message });
     }
 });
 exports.getParentById = getParentById;
@@ -75,7 +80,9 @@ const updateParent = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.status(200).json(parent);
     }
     catch (error) {
-        res.status(400).json({ error: "Failed to update parent", details: error.message });
+        res
+            .status(400)
+            .json({ error: "Failed to update parent", details: error.message });
     }
 });
 exports.updateParent = updateParent;
@@ -88,7 +95,9 @@ const deleteParent = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.status(200).json({ message: "Parent deleted successfully" });
     }
     catch (error) {
-        res.status(400).json({ error: "Failed to delete parent", details: error.message });
+        res
+            .status(400)
+            .json({ error: "Failed to delete parent", details: error.message });
     }
 });
 exports.deleteParent = deleteParent;

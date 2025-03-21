@@ -34,7 +34,8 @@ const getStudentById = (req, res) => __awaiter(void 0, void 0, void 0, function*
             include: { parent: true, class: true },
         });
         if (!student) {
-            return res.status(404).json({ error: "Student not found" });
+            res.status(404).json({ error: "Student not found" });
+            return;
         }
         res.json(student);
     }
@@ -47,36 +48,75 @@ exports.getStudentById = getStudentById;
 const createStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, name, surname, email, phone, address, img, bloodType, sex, parentId, classId, birthday, } = req.body;
     try {
+        // Check if the username already exists
+        const existingStudent = yield prisma.student.findUnique({
+            where: { username },
+        });
+        if (existingStudent) {
+            res
+                .status(400)
+                .json({ error: "Student with this username already exists" });
+            return;
+        }
+        // Validate birthday format
+        const parsedBirthday = new Date(birthday);
+        if (isNaN(parsedBirthday.getTime())) {
+            res.status(400).json({ error: "Invalid birthday format" });
+            return;
+        }
+        // Validate if classId exists
+        let classData = null;
+        if (classId) {
+            classData = yield prisma.class.findUnique({ where: { id: classId } });
+            if (!classData) {
+                res.status(404).json({ error: "Class not found" });
+                return;
+            }
+        }
+        // Validate if parentId exists
+        let parentData = null;
+        if (parentId) {
+            parentData = yield prisma.parent.findUnique({ where: { id: parentId } });
+            if (!parentData) {
+                res.status(404).json({ error: "Parent not found" });
+                return;
+            }
+        }
+        const studentData = {
+            id: crypto.randomUUID(),
+            username,
+            name,
+            surname,
+            email: email || null,
+            phone: phone || null,
+            address,
+            img: img || null,
+            bloodType,
+            sex: sex.toUpperCase(),
+            birthday: parsedBirthday,
+        };
+        // Add only if the related entity exists
+        if (parentData)
+            studentData.parent = { connect: { id: parentId } };
+        if (classData)
+            studentData.class = { connect: { id: classId } };
         const student = yield prisma.student.create({
-            data: {
-                id: crypto.randomUUID(),
-                username,
-                name,
-                surname,
-                email: email || null,
-                phone: phone || null,
-                address,
-                img: img || null,
-                bloodType,
-                sex,
-                birthday: new Date(birthday),
-                parent: { connect: { id: parentId } },
-                class: { connect: { id: classId } },
-               
-            },
+            data: studentData,
         });
         res.status(201).json(student);
+        return;
     }
     catch (error) {
         console.error(error);
-        res.status(400).json({ error: "Failed to create student" });
+        res.status(500).json({ error: "Failed to create student" });
+        return;
     }
 });
 exports.createStudent = createStudent;
 // Update a student
 const updateStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
-    const { username, name, surname, email, phone, address, img, bloodType, sex, parentId, classId,  birthday, } = req.body;
+    const { username, name, surname, email, phone, address, img, bloodType, sex, parentId, classId, birthday, } = req.body;
     try {
         const student = yield prisma.student.update({
             where: { id },
@@ -92,7 +132,6 @@ const updateStudent = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                 sex,
                 parentId,
                 classId,
-              
                 birthday,
             },
         });

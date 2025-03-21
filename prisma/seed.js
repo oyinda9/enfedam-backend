@@ -8,11 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma = new client_1.PrismaClient();
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
+        const hashedPassword = yield bcryptjs_1.default.hash("adminpassword", 10); // Hash the password
         console.log("Resetting database...");
         // Clear all tables (order matters due to foreign key constraints)
         yield prisma.result.deleteMany();
@@ -25,7 +30,6 @@ function main() {
         yield prisma.teacher.deleteMany();
         yield prisma.subject.deleteMany();
         yield prisma.class.deleteMany();
-    
         yield prisma.admin.deleteMany();
         yield prisma.event.deleteMany();
         yield prisma.announcement.deleteMany();
@@ -33,9 +37,20 @@ function main() {
         console.log("Seeding new data...");
         // Admin
         const admin = yield prisma.admin.create({
-            data: { id: "admin1", username: "admin1" },
+            data: {
+                id: "some-unique-id", // If your schema requires an ID
+                username: "admin",
+                password: hashedPassword, // Ensure this is included
+            },
         });
-       
+        ;
+        // Class
+        const schoolClass = yield prisma.class.create({
+            data: {
+                name: "1A",
+                capacity: 20,
+            },
+        });
         // Subject
         const subject = yield prisma.subject.create({ data: { name: "Mathematics" } });
         // Teacher
@@ -92,7 +107,6 @@ function main() {
                 bloodType: "O-",
                 sex: client_1.UserSex.FEMALE,
                 parentId: parent.id,
-             
                 classId: schoolClass.id,
                 birthday: new Date("2012-01-01"),
             },

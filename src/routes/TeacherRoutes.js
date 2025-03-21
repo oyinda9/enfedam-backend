@@ -2,10 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const TeachersControllers_1 = require("../controllers/TeachersControllers");
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
-router.post("/", TeachersControllers_1.createTeacher);
-router.get("/", TeachersControllers_1.getTeachers);
-// router.get("/teachers/:id", getTeacherById);
-router.put("/:id", TeachersControllers_1.updateTeacher);
-router.delete("/:id", TeachersControllers_1.deleteTeacher);
+router.post("/", authMiddleware_1.authenticateAdmin, authMiddleware_1.authorizeAdmin, authMiddleware_1.authorizeTeacherCreation, TeachersControllers_1.createTeacher);
+router.get("/", TeachersControllers_1.getTeachers, authMiddleware_1.authenticateAdmin, authMiddleware_1.authorizeAdmin, authMiddleware_1.authorizeTeacherCreation);
+router.get("/:id", TeachersControllers_1.getTeacherById, authMiddleware_1.authenticateAdmin, authMiddleware_1.authorizeAdmin);
+router.put("/:id", authMiddleware_1.authenticateAdmin, authMiddleware_1.authorizeAdmin, authMiddleware_1.authorizeTeacherCreation, TeachersControllers_1.updateTeacher);
+router.delete("/:id", authMiddleware_1.authenticateAdmin, authMiddleware_1.authorizeAdmin, authMiddleware_1.authorizeTeacherCreation, TeachersControllers_1.deleteTeacher);
 exports.default = router;
