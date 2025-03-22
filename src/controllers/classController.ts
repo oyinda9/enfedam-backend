@@ -33,7 +33,7 @@ export class ClassController {
       });
 
       res.status(201).json({ message: "Class created successfully", newClass });
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error creating class:", error);
       res.status(500).json({ error: "Error creating class", details: error.message });
     }
@@ -53,7 +53,7 @@ export class ClassController {
       });
 
       res.status(200).json(classes);
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error fetching classes:", error);
       res.status(500).json({ error: "Error fetching classes", details: error.message });
     }
@@ -80,7 +80,7 @@ export class ClassController {
       }
 
       res.status(200).json(classData);
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error fetching class:", error);
       res.status(500).json({ error: "Error fetching class", details: error.message });
     }
@@ -116,7 +116,7 @@ export class ClassController {
       });
 
       res.status(200).json({ message: "Class updated successfully", updatedClass });
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error updating class:", error);
       res.status(500).json({ error: "Error updating class", details: error.message });
     }
@@ -132,7 +132,7 @@ export class ClassController {
       });
 
       res.status(200).json({ message: "Class deleted successfully" });
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error deleting class:", error);
       res.status(500).json({ error: "Error deleting class", details: error.message });
     }
