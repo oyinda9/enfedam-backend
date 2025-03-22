@@ -8,7 +8,7 @@ import AdminRoutes from "./routes/AdminRoutes";
 import TeacherRoutes from "./routes/TeacherRoutes";
 import LessonRoutes from "./routes/LessonRoutes";
 import ResultRoutes from "./routes/ResultRoutes";
-import ClassRoutes from "./routes/ClassRoute";
+// import ClassRoutes from "./routes/ClassRoute";
 import EventsRoutes from "./routes/EventRoutes";
 import AuthRoutes from "./routes/AuthRoutes";
 
@@ -25,7 +25,7 @@ app.use("/admin", AdminRoutes);
 app.use("/teachers", TeacherRoutes); 
 app.use("/lesson", LessonRoutes);
 app.use("/results", ResultRoutes);
-app.use("/class", ClassRoutes);
+// app.use("/class", ClassRoutes);
 app.use("/events", EventsRoutes);
 app.use("/auth", AuthRoutes);
 // Health check endpoint
