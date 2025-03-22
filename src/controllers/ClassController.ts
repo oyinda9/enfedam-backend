@@ -13,8 +13,8 @@ export class ClassController {
         data: {
           name,
           capacity,
-          supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
-        } as any,
+          supervisorId: supervisorId || null
+        }
         
       });
 
