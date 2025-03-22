@@ -13,7 +13,7 @@ export class ClassController {
         data: {
           name,
           capacity,
-          supervisorId: supervisorId || null
+          supervisorId
         }
         
       });
