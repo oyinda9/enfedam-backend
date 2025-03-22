@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const client_1 = require("@prisma/client");
 const cors_1 = __importDefault(require("cors"));
+require('dotenv').config();
 const StudentRoutes_1 = __importDefault(require("./routes/StudentRoutes"));
 const ParentRoutes_1 = __importDefault(require("./routes/ParentRoutes"));
 const AdminRoutes_1 = __importDefault(require("./routes/AdminRoutes"));

@@ -5,7 +5,7 @@ import {
 //   getClassById, // Renamed to follow camelCase convention
   updateClass,
   deleteClass
-} from "../controllers/classController";
+} from "../controllers/ClassController";
 
 const router = Router();
 
