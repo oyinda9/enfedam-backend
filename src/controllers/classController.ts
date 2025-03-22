@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -9,13 +9,12 @@ export class ClassController {
     try {
       const { name, capacity, supervisorId } = req.body;
 
-      // Validate required fields
       if (!name || !capacity) {
         res.status(400).json({ error: "Name and capacity are required" });
         return;
       }
 
-      // If supervisorId is provided, check if it exists
+      let supervisorData = {};
       if (supervisorId) {
         const supervisorExists = await prisma.teacher.findUnique({
           where: { id: supervisorId },
@@ -25,34 +24,24 @@ export class ClassController {
           res.status(400).json({ error: "Supervisor not found" });
           return;
         }
+
+        supervisorData = { supervisor: { connect: { id: supervisorId } } };
       }
 
-      // Construct the data object conditionally
-      const data: {
-        name: string;
-        capacity: number;
-        supervisor?: { connect: { id: string } };
-      } = {
-        name,
-        capacity,
-      };
-
-      if (supervisorId) {
-        data.supervisor = { connect: { id: supervisorId } };
-      }
-
-      // Create the class
       const newClass = await prisma.class.create({
-        data,
+        data: {
+          name,
+          capacity,
+          ...supervisorData, // Connect supervisor only if provided
+        } as Prisma.ClassCreateInput, // Ensuring correct Prisma type
       });
 
       res.status(201).json({ message: "Class created successfully", newClass });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating class:", error);
-      res.status(500).json({ error: "Error creating class", details: error.message });
+      res.status(500).json({ error: "Error creating class", details: error instanceof Error ? error.message : "Unknown error" });
     }
   }
-
 
   // ✅ Get all classes
   static async getAllClasses(req: Request, res: Response): Promise<void> {
@@ -68,9 +57,9 @@ export class ClassController {
       });
 
       res.status(200).json(classes);
-    } catch (error:any) {
+    } catch (error) {
       console.error("Error fetching classes:", error);
-      res.status(500).json({ error: "Error fetching classes", details: error.message });
+      res.status(500).json({ error: "Error fetching classes", details: error instanceof Error ? error.message : "Unknown error" });
     }
   }
 
@@ -79,7 +68,7 @@ export class ClassController {
     try {
       const { id } = req.params;
       const classData = await prisma.class.findUnique({
-        where: { id: Number(id) },
+        where: { id: parseInt(id) },
         include: {
           supervisor: true,
           students: true,
@@ -95,9 +84,9 @@ export class ClassController {
       }
 
       res.status(200).json(classData);
-    } catch (error:any) {
+    } catch (error) {
       console.error("Error fetching class:", error);
-      res.status(500).json({ error: "Error fetching class", details: error.message });
+      res.status(500).json({ error: "Error fetching class", details: error instanceof Error ? error.message : "Unknown error" });
     }
   }
 
@@ -122,18 +111,18 @@ export class ClassController {
       }
 
       const updatedClass = await prisma.class.update({
-        where: { id: Number(id) },
+        where: { id: parseInt(id) },
         data: {
           name,
           capacity,
-          ...supervisorData, // Add supervisor only if it exists
+          ...supervisorData, // Add supervisor only if provided
         },
       });
 
       res.status(200).json({ message: "Class updated successfully", updatedClass });
-    } catch (error:any) {
+    } catch (error) {
       console.error("Error updating class:", error);
-      res.status(500).json({ error: "Error updating class", details: error.message });
+      res.status(500).json({ error: "Error updating class", details: error instanceof Error ? error.message : "Unknown error" });
     }
   }
 
@@ -143,13 +132,13 @@ export class ClassController {
       const { id } = req.params;
 
       await prisma.class.delete({
-        where: { id: Number(id) },
+        where: { id: parseInt(id) },
       });
 
       res.status(200).json({ message: "Class deleted successfully" });
-    } catch (error:any) {
+    } catch (error) {
       console.error("Error deleting class:", error);
-      res.status(500).json({ error: "Error deleting class", details: error.message });
+      res.status(500).json({ error: "Error deleting class", details: error instanceof Error ? error.message : "Unknown error" });
     }
   }
 }
