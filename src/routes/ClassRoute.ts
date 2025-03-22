@@ -1,18 +1,12 @@
 import { Router } from "express";
-import {
-  getAllClasses,
-  createClass,
-//   getClassById, // Renamed to follow camelCase convention
-  updateClass,
-  deleteClass
-} from "../controllers/ClassController";
+import { ClassController } from "../controllers/ClassController";
 
 const router = Router();
 
-router.get("/", getAllClasses);
-router.post("/", createClass);
-// router.get("/:id", getClassById); // Corrected method from POST to GET
-router.put("/:id", updateClass);  // Changed from POST to PUT for updates
-router.delete("/:id", deleteClass); // Changed from POST to DELETE for deletions
+router.post("/classes", ClassController.createClass);
+router.get("/classes", ClassController.getAllClasses);
+router.get("/classes/:id", ClassController.getClassById);
+router.put("/classes/:id", ClassController.updateClass);
+router.delete("/classes/:id", ClassController.deleteClass);
 
 export default router;
