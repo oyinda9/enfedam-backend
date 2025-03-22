@@ -13,8 +13,9 @@ export class ClassController {
         data: {
           name,
           capacity,
-          supervisorId,
-        },
+          supervisor: supervisorId ? { connect: { id: supervisorId } } : undefined,
+        } as any,
+        
       });
 
        res.status(201).json({ message: "Class created successfully", newClass });
