@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import cors from "cors";
+require('dotenv').config();
 import StudentRoutes from "./routes/StudentRoutes";
 import ParentRoutes from "./routes/ParentRoutes";
 import AdminRoutes from "./routes/AdminRoutes";
