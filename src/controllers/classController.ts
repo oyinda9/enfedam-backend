@@ -9,8 +9,13 @@ export class ClassController {
     try {
       const { name, capacity, supervisorId } = req.body;
 
+      // Validate required fields
+      if (!name || !capacity) {
+        res.status(400).json({ error: "Name and capacity are required" });
+        return;
+      }
+
       // If supervisorId is provided, check if it exists
-      let supervisorData = {};
       if (supervisorId) {
         const supervisorExists = await prisma.teacher.findUnique({
           where: { id: supervisorId },
@@ -20,24 +25,34 @@ export class ClassController {
           res.status(400).json({ error: "Supervisor not found" });
           return;
         }
-
-        supervisorData = { supervisor: { connect: { id: supervisorId } } };
       }
 
+      // Construct the data object conditionally
+      const data: {
+        name: string;
+        capacity: number;
+        supervisor?: { connect: { id: string } };
+      } = {
+        name,
+        capacity,
+      };
+
+      if (supervisorId) {
+        data.supervisor = { connect: { id: supervisorId } };
+      }
+
+      // Create the class
       const newClass = await prisma.class.create({
-        data: {
-          name,
-          capacity,
-          ...supervisorData, // Add supervisor only if it exists
-        },
+        data,
       });
 
       res.status(201).json({ message: "Class created successfully", newClass });
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error creating class:", error);
       res.status(500).json({ error: "Error creating class", details: error.message });
     }
   }
+
 
   // ✅ Get all classes
   static async getAllClasses(req: Request, res: Response): Promise<void> {
