@@ -77,9 +77,29 @@ export const createTeacher = async (
 };
 
 // ✅ Get All Teachers
+// export const getTeachers = async (req: Request, res: Response) => {
+//   try {
+//     const teachers = await prisma.teacher.findMany();
+//     res.status(200).json(teachers);
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to fetch teachers" });
+//   }
+// };
 export const getTeachers = async (req: Request, res: Response) => {
   try {
-    const teachers = await prisma.teacher.findMany();
+    const teachers = await prisma.teacher.findMany({
+      include: {
+        classes: {
+          select: {
+            id: true,
+            name: true, // Only fetch the class ID and name
+          },
+        },
+        subjects: true, // Fetch all subjects taught by the teacher
+        lessons: true, // Fetch all lessons taken by the teacher
+      },
+    });
+
     res.status(200).json(teachers);
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch teachers" });
