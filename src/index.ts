@@ -11,6 +11,7 @@ import ResultRoutes from "./routes/ResultRoutes";
 import ClassRoute from "./routes/ClassRoute";
 import EventsRoutes from "./routes/EventRoutes";
 import AuthRoutes from "./routes/AuthRoutes";
+import subjectRoute from "./routes/subjectRoute";
 
 const prisma = new PrismaClient();
 const app = express();
@@ -27,6 +28,8 @@ app.use("/lesson", LessonRoutes);
 app.use("/results", ResultRoutes);
 app.use("/class", ClassRoute);
 app.use("/events", EventsRoutes);
+app.use("/subject", subjectRoute);
+
 app.use("/auth", AuthRoutes);
 // Health check endpoint
 app.get("/", (req: Request, res: Response) => {
