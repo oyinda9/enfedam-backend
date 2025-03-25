@@ -1,8 +1,10 @@
 import express from "express";
-import { createSubject } from "../controllers/SubjectControllers"; 
+import { createSubject ,getAllSubjects } from "../controllers/SubjectControllers"; 
 
 const router = express.Router();
 
 router.post("/", createSubject);
+
+router.get("/", getAllSubjects);
 
 export default router;
