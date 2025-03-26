@@ -159,11 +159,14 @@ export const updateTeacher = async (req: Request, res: Response) => {
 
     res.status(200).json(updatedTeacher);
   } catch (error) {
-    console.error("Error updating teacher:", error); // ✅ Log error in console
-    res.status(500).json({ error: "Failed to update teacher" , details: error.message });
+     console.error("Error updating teacher:", error); // ✅ Log error in console
+     res.status(500).json({ 
+      error: "Failed to update teacher", 
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 };
-
+ 
 // ✅ Delete a Teacher
 export const deleteTeacher = async (req: Request, res: Response) => {
   try {
