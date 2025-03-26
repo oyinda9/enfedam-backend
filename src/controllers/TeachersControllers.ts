@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { connect } from "http2";
 
 const prisma = new PrismaClient();
@@ -149,9 +149,24 @@ export const getTeacherById = async (
 };
 
 // ✅ Update a Teacher
-export const updateTeacher = async (req: Request, res: Response) => {
+export const updateTeacher = async (req: Request, res: Response):Promise<void> => {
   try {
     const { id } = req.params;
+
+    // Ensure the teacher exists
+    const existingTeacher = await prisma.teacher.findUnique({ where: { id } });
+    if (!existingTeacher) {
+       res.status(404).json({ error: "Teacher not found" });
+       return
+    }
+
+    // Validate req.body fields
+    if (!req.body.name || !req.body.email) {
+       res.status(400).json({ error: "Missing required fields" });
+       return
+    }
+
+    // Update teacher
     const updatedTeacher = await prisma.teacher.update({
       where: { id },
       data: req.body,
@@ -159,11 +174,16 @@ export const updateTeacher = async (req: Request, res: Response) => {
 
     res.status(200).json(updatedTeacher);
   } catch (error) {
-     console.error("Error updating teacher:", error); // ✅ Log error in console
-     res.status(500).json({ 
-      error: "Failed to update teacher", 
-      details: error instanceof Error ? error.message : "Unknown error"
-    });
+    console.error("Error updating teacher:", error);
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+         res.status(404).json({ error: "Teacher not found" });
+         return
+      }
+    }
+
+    res.status(500).json({ error: "Failed to update teacher", details: error.message });
   }
 };
  
