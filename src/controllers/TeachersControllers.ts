@@ -159,7 +159,8 @@ export const updateTeacher = async (req: Request, res: Response) => {
 
     res.status(200).json(updatedTeacher);
   } catch (error) {
-    res.status(500).json({ error: "Failed to update teacher" });
+    console.error("Error updating teacher:", error); // ✅ Log error in console
+    res.status(500).json({ error: "Failed to update teacher" , details: error.message });
   }
 };
 
