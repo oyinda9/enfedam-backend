@@ -51,7 +51,6 @@ export class ClassController {
           supervisor: true,
           students: true,
           announcements: true,
-          events: true,
           lessons: true,
         },
       });
@@ -73,7 +72,6 @@ export class ClassController {
           supervisor: true,
           students: true,
           announcements: true,
-          events: true,
           lessons: true,
         },
       });

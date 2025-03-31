@@ -75,7 +75,6 @@ model Class {
   supervisorId  String?
   announcements Announcement[]
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
-  events        Event[]
   lessons       Lesson[]
   students      Student[]
 }
@@ -151,11 +150,9 @@ model Event {
   id          Int      @id @default(autoincrement())
   title       String
   description String
-  startTime   DateTime
-  endTime     DateTime
-  classId     Int?
-  class       Class?   @relation(fields: [classId], references: [id])
+  createdAt   DateTime @default(now())
 }
+
 
 model Announcement {
   id          Int      @id @default(autoincrement())
