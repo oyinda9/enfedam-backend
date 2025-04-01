@@ -37,7 +37,6 @@ export const registerAdmin = async (
   }
 };
 
-
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { identifier, password, surname } = req.body;
@@ -61,7 +60,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     } else {
       // Login using email and surname (for non-admins)
       if (!surname) {
-        res.status(400).json({ error: "Surname is required for non-admin login" });
+        res
+          .status(400)
+          .json({ error: "Surname is required for non-admin login" });
         return;
       }
 
@@ -124,15 +125,32 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user.id, role }, process.env.JWT_SECRET || "secret", {
-      expiresIn: "1d",
-    });
-    
+    const token = jwt.sign(
+      { id: user.id, role },
+      process.env.JWT_SECRET || "secret",
+      {
+        expiresIn: "1d",
+      }
+    );
+
     // Pass the token in the Authorization header
     res.setHeader("Authorization", `Bearer ${token}`);
 
-
-    res.status(200).json({ message: "Login successful", token, role });
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      role,
+      user: {
+        id: user.id,
+        username: user.username || null,
+        name: user.name || null,
+        surname: user.surname || null,
+        email: user.email || null,
+        phone: user.phone || null,
+        address: user.address || null,
+       
+      },
+    });
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ error: "Login failed" });
