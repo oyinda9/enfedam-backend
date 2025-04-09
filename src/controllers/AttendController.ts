@@ -1,13 +1,18 @@
-import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client'; 
+import { Request, Response } from "express";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export const createAttendance = async (req: Request, res: Response): Promise<void> => {
+export const createAttendance = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { studentId, present } = req.body;
 
-  if (!studentId || typeof present !== 'boolean') {
-    res.status(400).json({ error: 'Missing required fields: studentId and present' });
+  if (!studentId || typeof present !== "boolean") {
+    res
+      .status(400)
+      .json({ error: "Missing required fields: studentId and present" });
     return;
   }
 
@@ -16,35 +21,39 @@ export const createAttendance = async (req: Request, res: Response): Promise<voi
       data: {
         studentId,
         present,
-        date: new Date()
-      }
+        date: new Date(),
+      },
     });
 
     res.status(201).json({
-      message: `Attendance marked as ${present ? 'present' : 'absent'} for student with ID ${studentId}.`,
-      data: attendance
+      message: `Attendance marked as ${
+        present ? "present" : "absent"
+      } for student with ID ${studentId}.`,
+      data: attendance,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to create attendance' });
+    res.status(500).json({ error: "Failed to create attendance" });
   }
 };
 
-export const getAllAttendance = async (req: Request, res: Response): Promise<void> => {
+export const getAllAttendance = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Fetch all attendance records
     const attendanceRecords = await prisma.attendance.findMany();
 
     res.status(200).json({
-      message: 'Attendance records fetched successfully',
-      data: attendanceRecords
+      message: "Attendance records fetched successfully",
+      data: attendanceRecords,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to fetch attendance records' });
+    res.status(500).json({ error: "Failed to fetch attendance records" });
   }
 };
-
 
 // Define the type for GroupedAttendance
 interface GroupedAttendance {
@@ -52,7 +61,10 @@ interface GroupedAttendance {
   attendanceRecords: any[]; // Replace `any` with a more specific type if needed
 }
 
-export const getAllAttendanceByClass = async (req: Request, res: Response): Promise<void> => {
+export const getAllAttendanceByClass = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Fetch all attendance records with associated student and class information
     const attendanceRecords = await prisma.attendance.findMany({
@@ -88,13 +100,96 @@ export const getAllAttendanceByClass = async (req: Request, res: Response): Prom
     const formattedResponse = Object.values(groupedAttendance);
 
     res.status(200).json({
-      message: 'Attendance records grouped by class fetched successfully',
+      message: "Attendance records grouped by class fetched successfully",
       data: formattedResponse,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Failed to fetch attendance records' });
+    res.status(500).json({ error: "Failed to fetch attendance records" });
   }
 };
 
+export const getAllAttendanceByClassStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // Fetch all attendance records with associated student and class information
+    const attendanceRecords = await prisma.attendance.findMany({
+      include: {
+        student: {
+          include: {
+            class: true, // Ensure class data is included
+          },
+        },
+      },
+    });
 
+    // Define the type for grouped attendance
+    const groupedAttendance: { [key: string]: any } = {}; // Grouped attendance by class
+
+    attendanceRecords.forEach((record) => {
+      const classId = record.student.class.id;
+      const className = record.student.class.name;
+      const gender = record.student.sex; // Assuming sex is stored under 'student.sex'
+      const dayOfWeek = new Date(record.date).toLocaleString("en-us", {
+        weekday: "short",
+      }); // Get the weekday (Mon, Tue, etc.)
+
+      // Initialize the group if it doesn't exist
+      if (!groupedAttendance[classId]) {
+        groupedAttendance[classId] = {
+          className, // Store the class name
+          attendanceRecords: [],
+          statistics: {
+            Mon: {
+              male: { present: 0, absent: 0 },
+              female: { present: 0, absent: 0 },
+            },
+            Tue: {
+              male: { present: 0, absent: 0 },
+              female: { present: 0, absent: 0 },
+            },
+            Wed: {
+              male: { present: 0, absent: 0 },
+              female: { present: 0, absent: 0 },
+            },
+            Thurs: {
+              male: { present: 0, absent: 0 },
+              female: { present: 0, absent: 0 },
+            },
+            Fri: {
+              male: { present: 0, absent: 0 },
+              female: { present: 0, absent: 0 },
+            },
+          },
+        };
+      }
+
+      // Increment the attendance count based on gender and the day of the week
+      const genderKey = gender === "MALE" ? "male" : "female";
+      const dayStats = groupedAttendance[classId].statistics[dayOfWeek];
+
+      if (record.present) {
+        dayStats[genderKey].present += 1;
+      } else {
+        dayStats[genderKey].absent += 1;
+      }
+
+      // Add the attendance record to the group
+      groupedAttendance[classId].attendanceRecords.push(record);
+    });
+
+    // Convert the object into an array format
+    const formattedResponse = Object.values(groupedAttendance);
+
+    res.status(200).json({
+      message:
+        "Attendance records grouped by class and gender fetched successfully",
+      data: formattedResponse,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch attendance records" });
+  }
+};
