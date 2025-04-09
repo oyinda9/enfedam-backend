@@ -1,7 +1,7 @@
 import express from 'express';
-import { createAttendance } from "../controllers/attendanceController"
+import { createAttendance } from "../controllers/AttendController"
 const router = express.Router();
 
-router.post('/attendance', createAttendance);
+router.post('/', createAttendance);
 
 export default router;
