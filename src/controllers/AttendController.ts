@@ -44,3 +44,57 @@ export const getAllAttendance = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ error: 'Failed to fetch attendance records' });
   }
 };
+
+
+// Define the type for GroupedAttendance
+interface GroupedAttendance {
+  className: string;
+  attendanceRecords: any[]; // Replace `any` with a more specific type if needed
+}
+
+export const getAllAttendanceByClass = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Fetch all attendance records with associated student and class information
+    const attendanceRecords = await prisma.attendance.findMany({
+      include: {
+        student: {
+          include: {
+            class: true, // Ensure class data is included
+          },
+        },
+      },
+    });
+
+    // Define the type for grouped attendance
+    const groupedAttendance: { [key: string]: GroupedAttendance } = {}; // Use the GroupedAttendance interface
+
+    attendanceRecords.forEach((record) => {
+      const classId = record.student.class.id;
+      const className = record.student.class.name;
+
+      // Initialize the group if it doesn't exist
+      if (!groupedAttendance[classId]) {
+        groupedAttendance[classId] = {
+          className, // Store the class name
+          attendanceRecords: [],
+        };
+      }
+
+      // Add the attendance record to the group
+      groupedAttendance[classId].attendanceRecords.push(record);
+    });
+
+    // Convert the object into an array format
+    const formattedResponse = Object.values(groupedAttendance);
+
+    res.status(200).json({
+      message: 'Attendance records grouped by class fetched successfully',
+      data: formattedResponse,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch attendance records' });
+  }
+};
+
+
