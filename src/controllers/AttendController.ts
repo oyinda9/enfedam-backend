@@ -29,3 +29,18 @@ export const createAttendance = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ error: 'Failed to create attendance' });
   }
 };
+
+export const getAllAttendance = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Fetch all attendance records
+    const attendanceRecords = await prisma.attendance.findMany();
+
+    res.status(200).json({
+      message: 'Attendance records fetched successfully',
+      data: attendanceRecords
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch attendance records' });
+  }
+};
