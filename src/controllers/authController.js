@@ -64,7 +64,9 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         else {
             // Login using email and surname (for non-admins)
             if (!surname) {
-                res.status(400).json({ error: "Surname is required for non-admin login" });
+                res
+                    .status(400)
+                    .json({ error: "Surname is required for non-admin login" });
                 return;
             }
             // Check for Teacher with matching email and surname
@@ -125,7 +127,20 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         });
         // Pass the token in the Authorization header
         res.setHeader("Authorization", `Bearer ${token}`);
-        res.status(200).json({ message: "Login successful", token, role });
+        res.status(200).json({
+            message: "Login successful",
+            token,
+            role,
+            user: {
+                id: user.id,
+                username: user.username || null,
+                name: user.name || null,
+                surname: user.surname || null,
+                email: user.email || null,
+                phone: user.phone || null,
+                address: user.address || null,
+            },
+        });
     }
     catch (error) {
         console.error("Login Error:", error);

@@ -57,9 +57,28 @@ const createTeacher = (req, res) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.createTeacher = createTeacher;
 // ✅ Get All Teachers
+// export const getTeachers = async (req: Request, res: Response) => {
+//   try {
+//     const teachers = await prisma.teacher.findMany();
+//     res.status(200).json(teachers);
+//   } catch (error) {
+//     res.status(500).json({ error: "Failed to fetch teachers" });
+//   }
+// };
 const getTeachers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const teachers = yield prisma.teacher.findMany();
+        const teachers = yield prisma.teacher.findMany({
+            include: {
+                classes: {
+                    select: {
+                        id: true,
+                        name: true, // Only fetch the class ID and name
+                    },
+                },
+                subjects: true, // Fetch all subjects taught by the teacher
+                lessons: true, // Fetch all lessons taken by the teacher
+            },
+        });
         res.status(200).json(teachers);
     }
     catch (error) {
@@ -108,6 +127,18 @@ exports.getTeacherById = getTeacherById;
 const updateTeacher = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
+        // Ensure the teacher exists
+        const existingTeacher = yield prisma.teacher.findUnique({ where: { id } });
+        if (!existingTeacher) {
+            res.status(404).json({ error: "Teacher not found" });
+            return;
+        }
+        // Validate req.body fields
+        if (!req.body.name || !req.body.email) {
+            res.status(400).json({ error: "Missing required fields" });
+            return;
+        }
+        // Update teacher
         const updatedTeacher = yield prisma.teacher.update({
             where: { id },
             data: req.body,
@@ -115,7 +146,14 @@ const updateTeacher = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.status(200).json(updatedTeacher);
     }
     catch (error) {
-        res.status(500).json({ error: "Failed to update teacher" });
+        console.error("Error updating teacher:", error);
+        if (error instanceof client_1.Prisma.PrismaClientKnownRequestError) {
+            if (error.code === "P2025") {
+                res.status(404).json({ error: "Teacher not found" });
+                return;
+            }
+        }
+        res.status(500).json({ error: "Failed to update teacher", details: error });
     }
 });
 exports.updateTeacher = updateTeacher;

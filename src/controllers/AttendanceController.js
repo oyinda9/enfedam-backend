@@ -9,17 +9,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.markAttendance = void 0;
+exports.createAttendance = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
-const markAttendance = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createAttendance = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { studentId, present } = req.body;
+    if (!studentId || typeof present !== 'boolean') {
+        res.status(400).json({ error: 'Missing required fields: studentId and present' });
+        return;
+    }
     try {
-        const { date, present, studentId, lessonId } = req.body;
-        const attendance = yield prisma.attendance.create({ data: { date, present, studentId, lessonId } });
-        res.status(201).json(attendance);
+        const attendance = yield prisma.attendance.create({
+            data: {
+                studentId,
+                present,
+                date: new Date()
+            }
+        });
+        res.status(201).json({
+            message: `Attendance marked as ${present ? 'present' : 'absent'} for student with ID ${studentId}.`,
+            data: attendance
+        });
     }
     catch (error) {
-        res.status(500).json({ error: 'Failed to mark attendance' });
+        console.error(error);
+        res.status(500).json({ error: 'Failed to create attendance' });
     }
 });
-exports.markAttendance = markAttendance;
+exports.createAttendance = createAttendance;
