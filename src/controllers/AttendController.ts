@@ -114,32 +114,33 @@ export const getAllAttendanceByClassStats = async (
   res: Response
 ): Promise<void> => {
   try {
-    // Fetch all attendance records with associated student and class information
     const attendanceRecords = await prisma.attendance.findMany({
       include: {
         student: {
           include: {
-            class: true, // Ensure class data is included
+            class: true,
           },
         },
       },
     });
 
-    // Define the type for grouped attendance
-    const groupedAttendance: { [key: string]: any } = {}; // Grouped attendance by class
+    const groupedAttendance: { [key: string]: any } = {};
 
     attendanceRecords.forEach((record) => {
       const classId = record.student.class.id;
       const className = record.student.class.name;
-      const gender = record.student.sex; // Assuming sex is stored under 'student.sex'
+      const gender = record.student.sex;
       const dayOfWeek = new Date(record.date).toLocaleString("en-us", {
         weekday: "short",
-      }); // Get the weekday (Mon, Tue, etc.)
+      });
 
-      // Initialize the group if it doesn't exist
+      // Only include Monday to Friday
+      const validDays = ["Mon", "Tue", "Wed", "Thurs", "Fri"];
+      if (!validDays.includes(dayOfWeek)) return;
+
       if (!groupedAttendance[classId]) {
         groupedAttendance[classId] = {
-          className, // Store the class name
+          className,
           attendanceRecords: [],
           statistics: {
             Mon: {
@@ -166,8 +167,7 @@ export const getAllAttendanceByClassStats = async (
         };
       }
 
-      // Increment the attendance count based on gender and the day of the week
-      const genderKey = gender === "MALE" ? "male" : "female";
+      const genderKey = gender?.toUpperCase() === "MALE" ? "male" : "female";
       const dayStats = groupedAttendance[classId].statistics[dayOfWeek];
 
       if (record.present) {
@@ -176,11 +176,9 @@ export const getAllAttendanceByClassStats = async (
         dayStats[genderKey].absent += 1;
       }
 
-      // Add the attendance record to the group
       groupedAttendance[classId].attendanceRecords.push(record);
     });
 
-    // Convert the object into an array format
     const formattedResponse = Object.values(groupedAttendance);
 
     res.status(200).json({
@@ -193,3 +191,4 @@ export const getAllAttendanceByClassStats = async (
     res.status(500).json({ error: "Failed to fetch attendance records" });
   }
 };
+
