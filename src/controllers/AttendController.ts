@@ -135,7 +135,7 @@ export const getAllAttendanceByClassStats = async (
       });
 
       // Only include Monday to Friday
-      const validDays = ["Mon", "Tue", "Wed", "Thurs", "Fri"];
+      const validDays = ["Mon", "Tue", "Wed", "Thu", "Fri"];
       if (!validDays.includes(dayOfWeek)) return;
 
       if (!groupedAttendance[classId]) {
@@ -155,7 +155,7 @@ export const getAllAttendanceByClassStats = async (
               male: { present: 0, absent: 0 },
               female: { present: 0, absent: 0 },
             },
-            Thurs: {
+            Thu: {
               male: { present: 0, absent: 0 },
               female: { present: 0, absent: 0 },
             },
