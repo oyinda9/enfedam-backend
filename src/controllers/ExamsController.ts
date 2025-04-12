@@ -9,25 +9,25 @@ export const createExamScore = async (req: Request, res: Response): Promise<void
       const { score, studentId, subjectId } = req.body;
   
       // Fetch the exam that the score will be associated with (e.g., by a default or predefined exam logic)
-      const exam = await prisma.exam.findFirst(); // Assuming there's a default exam in the system
+      const exam = await prisma.exam.findFirst(); 
   
       if (!exam) {
         res.status(400).json({ error: 'No exam found to associate the score with' });
         return;
       }
   
-      // Create a new result for the student with the score
+  
       const result = await prisma.result.create({
         data: {
           score,
           exam: {
-            connect: { id: exam.id },  // Connect the predefined exam
+            connect: { id: exam.id }, 
           },
           student: {
-            connect: { id: studentId },  // Connect to the student
+            connect: { id: studentId }, 
           },
           subject: {
-            connect: { id: subjectId },  // Connect to the subject
+            connect: { id: subjectId },  
           },
         },
       });

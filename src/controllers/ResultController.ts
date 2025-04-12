@@ -7,7 +7,14 @@ const prisma = new PrismaClient()
 export const createResult = async (req: Request, res: Response): Promise<void> => {
   try {
     const { score, examId, studentId, subjectId } = req.body
-  
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+    });
+    
+    if (!student) {
+      res.status(404).json({ message: 'Student not found' });
+      return;
+    }
     // Create a new result entry in the database
     const result = await prisma.result.create({
       data: {
@@ -74,6 +81,30 @@ export const getResultById = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Failed to fetch result' })
   }
 }
+export const getResultsByStudentId = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { studentId } = req.params;
+
+    // Retrieve all results for a specific student
+    const results = await prisma.result.findMany({
+      where: { studentId },
+      include: {
+        student: true,
+        subject: true, // Include related subject details if needed
+      },
+    });
+
+    if (results.length === 0) {
+      res.status(404).json({ message: 'No results found for this student' });
+      return;
+    }
+
+    res.status(200).json(results); // Respond with the list of results for the student
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch results' });
+  }
+};
 
 // Update a result
 export const updateResult = async (req: Request, res: Response): Promise<void> => {

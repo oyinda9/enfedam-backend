@@ -4,7 +4,8 @@ import {
   getAllResults,
   getResultById,
   updateResult,
-  deleteResult
+  deleteResult,
+  getResultsByStudentId
 } from '../controllers/ResultController';
 
 const router = Router();
@@ -12,6 +13,7 @@ const router = Router();
 router.post('/', createResult);
 router.get('/', getAllResults);
 router.get('/:id', getResultById);
+router.get('/:id', getResultsByStudentId);
 router.put('/:id', updateResult);
 router.delete('/:id', deleteResult);
 
