@@ -6,16 +6,26 @@ const prisma = new PrismaClient()
 // Create a new result
 export const createResult = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { score, examId, studentId, subjectId, assignment, classwork, midterm, attendance, } = req.body
+    const {
+      score,
+      examId, // can be undefined
+      studentId,
+      subjectId,
+      assignment,
+      classwork,
+      midterm,
+      attendance,
+    } = req.body;
+
     const student = await prisma.student.findUnique({
       where: { id: studentId },
     });
-    
+
     if (!student) {
       res.status(404).json({ message: 'Student not found' });
       return;
     }
-    // Create a new result entry in the database
+
     const result = await prisma.result.create({
       data: {
         score,
@@ -23,9 +33,11 @@ export const createResult = async (req: Request, res: Response): Promise<void> =
         classwork,
         midterm,
         attendance,
-        exam: {
-          connect: { id: examId },
-        },
+        ...(examId && {
+          exam: {
+            connect: { id: examId },
+          },
+        }),
         student: {
           connect: { id: studentId },
         },
@@ -33,14 +45,15 @@ export const createResult = async (req: Request, res: Response): Promise<void> =
           connect: { id: subjectId },
         },
       },
-    })
+    });
 
-    res.status(201).json(result)  // Respond with the created result
+    res.status(201).json(result);
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to create result' })
+    console.error(error);
+    res.status(500).json({ message: 'Failed to create result' });
   }
-}
+};
+
 
 // Get all results
 export const getAllResults = async (req: Request, res: Response): Promise<void> => {
