@@ -34,7 +34,6 @@ model Student {
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
-
 }
 
 model Teacher {
@@ -81,12 +80,12 @@ model Class {
 }
 
 model Subject {
-  id         Int         @id @default(autoincrement())
-  name       String      @unique
-  lessons    Lesson[]
-  exams      Exam[]
-  teachers   Teacher[]   @relation("SubjectToTeacher")
-  Result     Result[]
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  lessons  Lesson[]
+  exams    Exam[]
+  teachers Teacher[] @relation("SubjectToTeacher")
+  Result   Result[]
 }
 
 model Lesson {
@@ -106,11 +105,11 @@ model Lesson {
 }
 
 model Exam {
-  id         Int         @id @default(autoincrement())
-  subjectId  Int
-  subject    Subject     @relation(fields: [subjectId], references: [id])
-  results    Result[]    // Associate results to the exam
-  score      Int         // Exam score
+  id        Int      @id @default(autoincrement())
+  subjectId Int
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  results   Result[] // Associate results to the exam
+  score     Int // Exam score
 }
 
 model Assignment {
@@ -123,15 +122,20 @@ model Assignment {
 }
 
 model Result {
-  id         Int         @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   score      Float
   examId     Int
   studentId  String
   subjectId  Int
-  exam       Exam        @relation(fields: [examId], references: [id])
-  student    Student     @relation(fields: [studentId], references: [id])
-  subject    Subject     @relation(fields: [subjectId], references: [id])
+  assignment Float   @default(0)
+  classwork  Float   @default(0)
+  midterm    Float   @default(0)
+  attendance Float   @default(0)
+  exam       Exam    @relation(fields: [examId], references: [id])
+  student    Student @relation(fields: [studentId], references: [id])
+  subject    Subject @relation(fields: [subjectId], references: [id])
 }
+
 model Attendance {
   id        Int      @id @default(autoincrement())
   date      DateTime
@@ -155,8 +159,6 @@ model Announcement {
   classId     Int?
   class       Class?   @relation(fields: [classId], references: [id])
 }
-
-
 
 enum UserSex {
   MALE

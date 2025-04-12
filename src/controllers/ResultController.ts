@@ -6,7 +6,7 @@ const prisma = new PrismaClient()
 // Create a new result
 export const createResult = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { score, examId, studentId, subjectId } = req.body
+    const { score, examId, studentId, subjectId, assignment, classwork, midterm, attendance, } = req.body
     const student = await prisma.student.findUnique({
       where: { id: studentId },
     });
@@ -19,6 +19,10 @@ export const createResult = async (req: Request, res: Response): Promise<void> =
     const result = await prisma.result.create({
       data: {
         score,
+        assignment,
+        classwork,
+        midterm,
+        attendance,
         exam: {
           connect: { id: examId },
         },
@@ -98,12 +102,19 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
       return;
     }
 
-    // Group results by subject and compute total/average
     const groupedResults: Record<string, any> = {};
     let totalScore = 0;
 
     results.forEach(result => {
       const subjectName = result.subject.name;
+
+      // Sum up individual components for the result
+      const totalResultScore =
+        result.score +
+        (result.assignment ?? 0) +
+        (result.classwork ?? 0) +
+        (result.midterm ?? 0) +
+        (result.attendance ?? 0);
 
       if (!groupedResults[subjectName]) {
         groupedResults[subjectName] = {
@@ -114,11 +125,16 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
       }
 
       groupedResults[subjectName].scores.push({
-        score: result.score,
         resultId: result.id,
+        score: result.score,
+        assignment: result.assignment ?? 0,
+        classwork: result.classwork ?? 0,
+        midterm: result.midterm ?? 0,
+        attendance: result.attendance ?? 0,
+        total: totalResultScore,
       });
 
-      totalScore += result.score;
+      totalScore += totalResultScore;
     });
 
     const averageScore = totalScore / results.length;
@@ -135,6 +151,7 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
     res.status(500).json({ message: 'Failed to fetch results' });
   }
 };
+
 
 
 // Update a result
