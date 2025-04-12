@@ -13,7 +13,7 @@ const router = Router();
 router.post('/', createResult);
 router.get('/', getAllResults);
 router.get('/:id', getResultById);
-router.get('/:id', getResultsByStudentId);
+router.get('/studentid/:id', getResultsByStudentId);
 router.put('/:id', updateResult);
 router.delete('/:id', deleteResult);
 
