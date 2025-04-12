@@ -85,12 +85,11 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
   try {
     const { studentId } = req.params;
 
-    // Retrieve all results for a specific student
+    // Fetch all results for the student including subject details
     const results = await prisma.result.findMany({
       where: { studentId },
       include: {
-        student: true,
-        subject: true, // Include related subject details if needed
+        subject: true,
       },
     });
 
@@ -99,12 +98,44 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
       return;
     }
 
-    res.status(200).json(results); // Respond with the list of results for the student
+    // Group results by subject and compute total/average
+    const groupedResults: Record<string, any> = {};
+    let totalScore = 0;
+
+    results.forEach(result => {
+      const subjectName = result.subject.name;
+
+      if (!groupedResults[subjectName]) {
+        groupedResults[subjectName] = {
+          subjectId: result.subjectId,
+          subjectName,
+          scores: [],
+        };
+      }
+
+      groupedResults[subjectName].scores.push({
+        score: result.score,
+        resultId: result.id,
+      });
+
+      totalScore += result.score;
+    });
+
+    const averageScore = totalScore / results.length;
+
+    res.status(200).json({
+      studentId,
+      totalScore,
+      averageScore,
+      subjects: Object.values(groupedResults),
+    });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to fetch results' });
   }
 };
+
 
 // Update a result
 export const updateResult = async (req: Request, res: Response): Promise<void> => {
