@@ -1,14 +1,15 @@
 import express from 'express'
 import {
-  createExam,
-  addExamScore,
-  getAllExamsWithScores,
+    createExamScore,
+    getExamScoreById,
+    getAllExamScores
+
 } from '../controllers/ExamsController'
 
 const router = express.Router()
 
-router.post('/create', createExam)
-router.post('/score', addExamScore)
-router.get('/all', getAllExamsWithScores)
+router.post('/create', createExamScore)
+router.post('/score', getExamScoreById)
+router.get('/all', getAllExamScores)
 
 export default router

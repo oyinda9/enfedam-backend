@@ -4,80 +4,74 @@ import { Request, Response } from 'express'
 const prisma = new PrismaClient()
 
 // Create a new exam
-export const createExam = async (req: Request, res: Response) => {
-  try {
-    const { subjectId, score } = req.body
-
-    const newExam = await prisma.exam.create({
-      data: {
-        subjectId,
-        score,
-      },
-    })
-
-    res.status(201).json(newExam)
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to create exam' })
-  }
-}
-
-// Add a student's score for an exam
-export const addExamScore = async (req: Request, res: Response) : Promise<void> => {
-  try {
-    const { studentId, subjectId, examId, score } = req.body
-
-    const examExists = await prisma.exam.findUnique({
-      where: { id: examId },
-    })
-
-    if (!examExists) {
-       res.status(404).json({ message: 'Exam not found' })
-       return
-    }
-
-    const examScore = await prisma.examScore.upsert({
-      where: {
-        studentId_subjectId: {
-          studentId,
-          subjectId,
-        },
-      },
-      update: {
-        score,
-      },
-      create: {
-        studentId,
-        subjectId,
-        score,
-      },
-    })
-
-    res.status(200).json(examScore)
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to add exam score' })
-  }
-}
-
-// Get all exams with scores
-export const getAllExamsWithScores = async (req: Request, res: Response) => {
-  try {
-    const exams = await prisma.exam.findMany({
-      include: {
-        subject: true,
-        examScores: {
-          include: {
-            student: true,
-            subject: true,
+export const createExamScore = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { score, examId, studentId, subjectId } = req.body;
+  
+      // Create a new result for a student
+      const result = await prisma.result.create({
+        data: {
+          score,
+          exam: {
+            connect: { id: examId },  // Connect to the exam
+          },
+          student: {
+            connect: { id: studentId },  // Connect to the student
+          },
+          subject: {
+            connect: { id: subjectId },  // Connect to the subject
           },
         },
-      },
-    })
+      });
+  
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(500).json({ error});
+    }
+  };
 
-    res.status(200).json(exams)
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to fetch exams' })
+// Get a specific exam score (result) by its ID
+export const getExamScoreById = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params
+  
+      // Fetch the result by its ID, including student, exam, and subject details
+      const result = await prisma.result.findUnique({
+        where: { id: Number(id) },
+        include: {
+          student: true,  // Include student details
+          exam: true,     // Include exam details
+          subject: true,  // Include subject details
+        },
+      })
+  
+      if (!result) {
+        res.status(404).json({ message: 'Result not found' })
+        return
+      }
+  
+      res.status(200).json(result)
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ message: 'Failed to fetch exam score' })
+    }
   }
-}
+
+  // Get all exam scores (results) for all students
+export const getAllExamScores = async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Fetch all results with student, exam, and subject information
+      const results = await prisma.result.findMany({
+        include: {
+          student: true,  // Include student details for each result
+          exam: true,     // Include exam details for each result
+          subject: true,  // Include subject details for each result
+        },
+      })
+    
+      res.status(200).json(results)  // Respond with the list of results
+    } catch (error) {
+      console.error(error)  // Log the error for debugging
+      res.status(500).json({ message: 'Failed to fetch exam scores' })  // Respond with an error message
+    }
+  }

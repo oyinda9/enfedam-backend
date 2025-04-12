@@ -34,7 +34,7 @@ model Student {
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
-  examScores  ExamScore[]
+
 }
 
 model Teacher {
@@ -86,7 +86,6 @@ model Subject {
   lessons    Lesson[]
   exams      Exam[]
   teachers   Teacher[]   @relation("SubjectToTeacher")
-  examScores ExamScore[]
   Result     Result[]
 }
 
@@ -110,10 +109,8 @@ model Exam {
   id         Int         @id @default(autoincrement())
   subjectId  Int
   subject    Subject     @relation(fields: [subjectId], references: [id])
-  results    Result[]
-  score      Int
-  // Add if you want scores tied to Exam
-  examScores ExamScore[]
+  results    Result[]    // Associate results to the exam
+  score      Int         // Exam score
 }
 
 model Assignment {
@@ -123,22 +120,18 @@ model Assignment {
   dueDate   DateTime
   lessonId  Int
   lesson    Lesson   @relation(fields: [lessonId], references: [id])
-  results   Result[]
 }
 
 model Result {
-  id           Int         @id @default(autoincrement())
-  score        Float
-  examId       Int?
-  assignmentId Int?
-  studentId    String
-  subjectId    Int // Add this field
-  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
-  exam         Exam?       @relation(fields: [examId], references: [id])
-  student      Student     @relation(fields: [studentId], references: [id])
-  subject      Subject     @relation(fields: [subjectId], references: [id])
+  id         Int         @id @default(autoincrement())
+  score      Float
+  examId     Int
+  studentId  String
+  subjectId  Int
+  exam       Exam        @relation(fields: [examId], references: [id])
+  student    Student     @relation(fields: [studentId], references: [id])
+  subject    Subject     @relation(fields: [subjectId], references: [id])
 }
-
 model Attendance {
   id        Int      @id @default(autoincrement())
   date      DateTime
@@ -163,20 +156,7 @@ model Announcement {
   class       Class?   @relation(fields: [classId], references: [id])
 }
 
-model ExamScore {
-  id        String   @id @default(uuid())
-  student   Student  @relation(fields: [studentId], references: [id])
-  studentId String
-  subject   Subject  @relation(fields: [subjectId], references: [id])
-  subjectId Int
-  score     Int // or Float if needed
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  Exam      Exam?    @relation(fields: [examId], references: [id])
-  examId    Int?
 
-  @@unique([studentId, subjectId])
-}
 
 enum UserSex {
   MALE
