@@ -17,6 +17,7 @@ import ExamRoutes from "./routes/ExamRoutes"
 
 
 
+
 const prisma = new PrismaClient();
 const app = express();
 const port = 5003;

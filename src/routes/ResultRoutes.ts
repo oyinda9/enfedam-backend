@@ -1,7 +1,18 @@
-import express from "express";
-import { Router } from "express";
-import { createResult } from "../controllers/ResultController";
-const router = express.Router();
-router.post("/", createResult);
+import { Router } from 'express';
+import {
+  createResult,
+  getAllResults,
+  getResultById,
+  updateResult,
+  deleteResult
+} from '../controllers/ResultController';
+
+const router = Router();
+
+router.post('/', createResult);
+router.get('/', getAllResults);
+router.get('/:id', getResultById);
+router.put('/:id', updateResult);
+router.delete('/:id', deleteResult);
 
 export default router;
