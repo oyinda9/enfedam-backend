@@ -34,6 +34,7 @@ model Student {
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
+  examScores  ExamScore[]
 }
 
 model Teacher {
@@ -79,13 +80,14 @@ model Class {
   students      Student[]
 }
 
-
-
 model Subject {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  lessons  Lesson[]
-  teachers Teacher[] @relation("SubjectToTeacher")
+  id         Int         @id @default(autoincrement())
+  name       String      @unique
+  lessons    Lesson[]
+  exams      Exam[]
+  teachers   Teacher[]   @relation("SubjectToTeacher")
+  examScores ExamScore[]
+  Result     Result[]
 }
 
 model Lesson {
@@ -98,20 +100,20 @@ model Lesson {
   classId     Int
   teacherId   String
   assignments Assignment[]
-  exams       Exam[]
-  class       Class        @relation(fields: [classId], references: [id])
-  subject     Subject      @relation(fields: [subjectId], references: [id])
-  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+
+  class   Class   @relation(fields: [classId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+  teacher Teacher @relation(fields: [teacherId], references: [id])
 }
 
 model Exam {
-  id        Int      @id @default(autoincrement())
-  title     String
-  startTime DateTime
-  endTime   DateTime
-  lessonId  Int
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
-  results   Result[]
+  id         Int         @id @default(autoincrement())
+  subjectId  Int
+  subject    Subject     @relation(fields: [subjectId], references: [id])
+  results    Result[]
+  score      Int
+  // Add if you want scores tied to Exam
+  examScores ExamScore[]
 }
 
 model Assignment {
@@ -126,13 +128,15 @@ model Assignment {
 
 model Result {
   id           Int         @id @default(autoincrement())
-  score        Int
+  score        Float
   examId       Int?
   assignmentId Int?
   studentId    String
+  subjectId    Int // Add this field
   assignment   Assignment? @relation(fields: [assignmentId], references: [id])
   exam         Exam?       @relation(fields: [examId], references: [id])
   student      Student     @relation(fields: [studentId], references: [id])
+  subject      Subject     @relation(fields: [subjectId], references: [id])
 }
 
 model Attendance {
@@ -143,14 +147,12 @@ model Attendance {
   student   Student  @relation(fields: [studentId], references: [id])
 }
 
-
 model Event {
   id          Int      @id @default(autoincrement())
   title       String
   description String
   createdAt   DateTime @default(now())
 }
-
 
 model Announcement {
   id          Int      @id @default(autoincrement())
@@ -159,6 +161,21 @@ model Announcement {
   date        DateTime
   classId     Int?
   class       Class?   @relation(fields: [classId], references: [id])
+}
+
+model ExamScore {
+  id        String   @id @default(uuid())
+  student   Student  @relation(fields: [studentId], references: [id])
+  studentId String
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  subjectId Int
+  score     Int // or Float if needed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Exam      Exam?    @relation(fields: [examId], references: [id])
+  examId    Int?
+
+  @@unique([studentId, subjectId])
 }
 
 enum UserSex {

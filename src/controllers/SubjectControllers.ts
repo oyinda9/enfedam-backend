@@ -16,7 +16,7 @@ export const createSubject = async (req: Request, res: Response) => {
 
 export const getAllSubjects = async (_req: Request, res: Response) => {
   try {
-    const subjects = await prisma.subject.findMany({ include: { teachers: true, lessons: true } });
+    const subjects = await prisma.subject.findMany({ include: { teachers: true, lessons: true ,exams:true } });
     res.json(subjects);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch subjects' });

@@ -13,6 +13,7 @@ import EventsRoutes from "./routes/EventRoutes";
 import AuthRoutes from "./routes/AuthRoutes";
 import subjectRoute from "./routes/subjectRoute";
 import attendRoute from "./routes/attendRoute";
+import ExamRoutes from "./routes/ExamRoutes"
 
 
 
@@ -33,6 +34,7 @@ app.use("/class", ClassRoute);
 app.use("/events", EventsRoutes);
 app.use("/subject", subjectRoute);
 app.use('/attendance', attendRoute);
+app.use('/exam', ExamRoutes);
 
 app.use("/auth", AuthRoutes);
 // Health check endpoint
