@@ -1,11 +1,14 @@
-import { PrismaClient } from '@prisma/client'
-import { Request, Response } from 'express'
+import { PrismaClient } from "@prisma/client";
+import { Request, Response } from "express";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 // Create a new result
 
-export const createResult = async (req: Request, res: Response): Promise<void> => {
+export const createResult = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const {
       examScore,
@@ -26,18 +29,23 @@ export const createResult = async (req: Request, res: Response): Promise<void> =
     });
 
     if (!student) {
-      res.status(404).json({ message: 'Student not found' });
+      res.status(404).json({ message: "Student not found" });
       return;
     }
 
-    const isTakingSubject = student.subject.some(subject => subject.id === subjectId);
+    const isTakingSubject = student.subject.some(
+      (subject) => subject.id === subjectId
+    );
     if (!isTakingSubject) {
-      res.status(400).json({ message: 'Student is not enrolled in this subject' });
+      res
+        .status(400)
+        .json({ message: "Student is not enrolled in this subject" });
       return;
     }
 
     // Step 2: Calculate total score and average score
-    const totalScore = examScore + assignment + classwork + midterm + attendance;
+    const totalScore =
+      examScore + assignment + classwork + midterm + attendance;
     const averageScore = totalScore / 5;
     const score = totalScore; // Set score to be equal to totalScore
 
@@ -59,18 +67,16 @@ export const createResult = async (req: Request, res: Response): Promise<void> =
 
     res.status(201).json(result);
   } catch (error) {
-    console.error('Error creating result:', error);
-    res.status(500).json({ message: 'Failed to create result' });
+    console.error("Error creating result:", error);
+    res.status(500).json({ message: "Failed to create result" });
   }
 };
 
-
-
-
-
-
 // Get all results
-export const getAllResults = async (req: Request, res: Response): Promise<void> => {
+export const getAllResults = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const results = await prisma.result.findMany({
       include: {
@@ -78,20 +84,23 @@ export const getAllResults = async (req: Request, res: Response): Promise<void> 
         exam: true,
         subject: true,
       },
-    })
+    });
 
-    res.status(200).json(results)  // Respond with the list of results
+    res.status(200).json(results); // Respond with the list of results
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to fetch results' })
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch results" });
   }
-}
+};
 
 // Get a result by ID
-export const getResultById = async (req: Request, res: Response): Promise<void> => {
+export const getResultById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const { id } = req.params
-  
+    const { id } = req.params;
+
     const result = await prisma.result.findUnique({
       where: { id: Number(id) },
       include: {
@@ -99,20 +108,23 @@ export const getResultById = async (req: Request, res: Response): Promise<void> 
         exam: true,
         subject: true,
       },
-    })
-  
+    });
+
     if (!result) {
-      res.status(404).json({ message: 'Result not found' })
-      return
+      res.status(404).json({ message: "Result not found" });
+      return;
     }
-  
-    res.status(200).json(result)  // Respond with the result
+
+    res.status(200).json(result); // Respond with the result
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to fetch result' })
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch result" });
   }
-}
-export const getResultsByStudentId = async (req: Request, res: Response): Promise<void> => {
+};
+export const getResultsByStudentId = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { studentId } = req.params;
 
@@ -125,23 +137,24 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
     });
 
     if (results.length === 0) {
-      res.status(404).json({ message: 'No results found for this student' });
+      res.status(404).json({ message: "No results found for this student" });
       return;
     }
 
     const groupedResults: Record<string, any> = {};
     let totalScore = 0;
+    let totalSubjects = 0;
 
-    results.forEach(result => {
-      const subjectName = result.subject.name;
+    results.forEach((result) => {
+      const subjectName = result.subject?.name; // Ensure subject is present
 
-      // Sum up individual components for the result
-      const totalResultScore =
-        result.score +
-        (result.assignment ?? 0) +
-        (result.classwork ?? 0) +
-        (result.midterm ?? 0) +
-        (result.attendance ?? 0);
+      if (!subjectName) {
+        console.error(`No subject name found for result with id: ${result.id}`);
+        return; // Skip if subject name is missing
+      }
+
+      // Sum up the individual result score
+      const totalResultScore = result.score; // If score is the total, don't add components again
 
       if (!groupedResults[subjectName]) {
         groupedResults[subjectName] = {
@@ -158,13 +171,14 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
         classwork: result.classwork ?? 0,
         midterm: result.midterm ?? 0,
         attendance: result.attendance ?? 0,
-        total: totalResultScore,
+        total: totalResultScore, // Total is just the score here
       });
 
       totalScore += totalResultScore;
+      totalSubjects += 1;
     });
 
-    const averageScore = totalScore / results.length;
+    const averageScore = totalSubjects > 0 ? totalScore / totalSubjects : 0;
 
     res.status(200).json({
       studentId,
@@ -172,21 +186,21 @@ export const getResultsByStudentId = async (req: Request, res: Response): Promis
       averageScore,
       subjects: Object.values(groupedResults),
     });
-
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to fetch results' });
+    console.error("Error fetching results:", error);
+    res.status(500).json({ message: "Failed to fetch results" });
   }
 };
 
-
-
 // Update a result
-export const updateResult = async (req: Request, res: Response): Promise<void> => {
+export const updateResult = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const { id } = req.params
-    const { score, examId, studentId, subjectId } = req.body
-  
+    const { id } = req.params;
+    const { score, examId, studentId, subjectId } = req.body;
+
     const result = await prisma.result.update({
       where: { id: Number(id) },
       data: {
@@ -195,27 +209,30 @@ export const updateResult = async (req: Request, res: Response): Promise<void> =
         student: studentId ? { connect: { id: studentId } } : undefined,
         subject: subjectId ? { connect: { id: subjectId } } : undefined,
       },
-    })
-  
-    res.status(200).json(result)  // Respond with the updated result
+    });
+
+    res.status(200).json(result); // Respond with the updated result
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to update result' })
+    console.error(error);
+    res.status(500).json({ message: "Failed to update result" });
   }
-}
+};
 
 // Delete a result
-export const deleteResult = async (req: Request, res: Response): Promise<void> => {
+export const deleteResult = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const { id } = req.params
-  
+    const { id } = req.params;
+
     await prisma.result.delete({
       where: { id: Number(id) },
-    })
-  
-    res.status(200).json({ message: 'Result deleted successfully' })
+    });
+
+    res.status(200).json({ message: "Result deleted successfully" });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ message: 'Failed to delete result' })
+    console.error(error);
+    res.status(500).json({ message: "Failed to delete result" });
   }
-}
+};
