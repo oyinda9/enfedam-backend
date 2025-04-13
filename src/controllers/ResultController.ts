@@ -4,21 +4,25 @@ import { Request, Response } from 'express'
 const prisma = new PrismaClient()
 
 // Create a new result
+
 export const createResult = async (req: Request, res: Response): Promise<void> => {
   try {
     const {
-      score,
-      examId, // can be undefined
+      examScore,
       studentId,
       subjectId,
-      assignment,
-      classwork,
-      midterm,
-      attendance,
+      assignment = 0,
+      classwork = 0,
+      midterm = 0,
+      attendance = 0,
     } = req.body;
 
+    // Step 1: Fetch student and check if enrolled in the subject
     const student = await prisma.student.findUnique({
       where: { id: studentId },
+      include: {
+        subject: true,
+      },
     });
 
     if (!student) {
@@ -26,33 +30,43 @@ export const createResult = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
+    const isTakingSubject = student.subject.some(subject => subject.id === subjectId);
+    if (!isTakingSubject) {
+      res.status(400).json({ message: 'Student is not enrolled in this subject' });
+      return;
+    }
+
+    // Step 2: Calculate total score and average score
+    const totalScore = examScore + assignment + classwork + midterm + attendance;
+    const averageScore = totalScore / 5;
+    const score = totalScore; // Set score to be equal to totalScore
+
+    // Step 3: Create the result
     const result = await prisma.result.create({
       data: {
-        score,
+        score, // The score is the same as the totalScore
+        examScore,
         assignment,
         classwork,
         midterm,
         attendance,
-        ...(examId && {
-          exam: {
-            connect: { id: examId },
-          },
-        }),
-        student: {
-          connect: { id: studentId },
-        },
-        subject: {
-          connect: { id: subjectId },
-        },
+        totalScore,
+        averageScore,
+        student: { connect: { id: studentId } },
+        subject: { connect: { id: subjectId } },
       },
     });
 
     res.status(201).json(result);
   } catch (error) {
-    console.error(error);
+    console.error('Error creating result:', error);
     res.status(500).json({ message: 'Failed to create result' });
   }
 };
+
+
+
+
 
 
 // Get all results

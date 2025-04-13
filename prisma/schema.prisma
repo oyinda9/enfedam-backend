@@ -34,6 +34,7 @@ model Student {
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
+  subject Subject[]  @relation("StudentSubjects")
 }
 
 model Teacher {
@@ -86,6 +87,7 @@ model Subject {
   exams    Exam[]
   teachers Teacher[] @relation("SubjectToTeacher")
   Result   Result[]
+  students Student[]  @relation("StudentSubjects")
 }
 
 model Lesson {
@@ -122,19 +124,25 @@ model Assignment {
 }
 
 model Result {
-  id         Int     @id @default(autoincrement())
-  score      Float
-  examId     Int
-  studentId  String
-  subjectId  Int
-  assignment Float   @default(0)
-  classwork  Float   @default(0)
-  midterm    Float   @default(0)
-  attendance Float   @default(0)
-  exam       Exam    @relation(fields: [examId], references: [id])
-  student    Student @relation(fields: [studentId], references: [id])
-  subject    Subject @relation(fields: [subjectId], references: [id])
+  id           Int     @id @default(autoincrement())
+  score        Float
+  examId       Int?
+  examScore    Int?     // <-- optional
+  totalScore   Float?   // <-- optional
+  averageScore Float?   // <-- optional
+  studentId    String
+  subjectId    Int
+  assignment   Float   @default(0)
+  classwork    Float   @default(0)
+  midterm      Float   @default(0)
+  attendance   Float   @default(0)
+  exam         Exam?   @relation(fields: [examId], references: [id])
+  student      Student @relation(fields: [studentId], references: [id])
+  subject      Subject @relation(fields: [subjectId], references: [id])
 }
+
+
+
 
 model Attendance {
   id        Int      @id @default(autoincrement())
