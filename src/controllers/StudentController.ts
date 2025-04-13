@@ -53,6 +53,7 @@ export const createStudent = async (
     parentId,
     classId,
     birthday,
+    subjectIds = [], // ✅ include subjectIds
   } = req.body;
 
   try {
@@ -95,6 +96,19 @@ export const createStudent = async (
       }
     }
 
+    // Validate subjects
+    const validSubjectIds = await prisma.subject.findMany({
+      where: {
+        id: { in: subjectIds },
+      },
+      select: { id: true },
+    });
+
+    if (validSubjectIds.length !== subjectIds.length) {
+      res.status(400).json({ error: "Some subjectIds are invalid" });
+      return;
+    }
+
     const studentData: any = {
       id: crypto.randomUUID(),
       username,
@@ -107,25 +121,26 @@ export const createStudent = async (
       bloodType,
       sex: sex.toUpperCase(),
       birthday: parsedBirthday,
+      subject: {
+        connect: validSubjectIds.map((s) => ({ id: s.id })), // ✅ connect subjects
+      },
     };
 
-    // Add only if the related entity exists
     if (parentData) studentData.parent = { connect: { id: parentId } };
     if (classData) studentData.class = { connect: { id: classId } };
-  
 
     const student = await prisma.student.create({
       data: studentData,
+      include: { subject: true, class: true, parent: true },
     });
 
     res.status(201).json(student);
-    return;
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to create student" });
-    return;
   }
 };
+
 
 // Update a student
 export const updateStudent = async (req: Request, res: Response) => {
