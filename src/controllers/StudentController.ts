@@ -8,7 +8,7 @@ export const getAllStudents = async (req: Request, res: Response) => {
   try {
     const students = await prisma.student.findMany({
     
-      include: { parent: true, class: true },
+      include: { parent: true, class: true, subject:true },
     });
     res.json(students);
   } catch (error) {
@@ -22,7 +22,7 @@ export const getStudentById = async (req: Request, res: Response) : Promise<void
   try {
     const student = await prisma.student.findUnique({
       where: { id },
-      include: { parent: true, class: true},
+      include: { parent: true, class: true,subject:true},
     });
     if (!student) {
        res.status(404).json({ error: "Student not found" });
