@@ -5,7 +5,7 @@ import {
   getResultById,
   updateResult,
   deleteResult,
-  getResultsByStudentId,getOneStudentCummulatedResult
+  getResultsByStudentId,getOneStudentsCummulatedResults
 ,getAllStudentsCummulatedResults} from '../controllers/ResultController';
 
 const router = Router();
@@ -13,9 +13,9 @@ const router = Router();
 router.post('/', createResult);
 router.get('/', getAllResults);
 router.get('/:id', getResultById);
-router.get('/cummulativestudent',getAllStudentsCummulatedResults)
+router.get('cummulativestudent/',getAllStudentsCummulatedResults)
 router.get('/studentid/:id', getResultsByStudentId);
-router.get('/Cummulativestudent/:id', getOneStudentCummulatedResult);
+router.get('/CummulativeStudent/:id', getOneStudentsCummulatedResults);
 router.put('/:id', updateResult);
 router.delete('/:id', deleteResult);
 
