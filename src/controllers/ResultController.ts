@@ -197,25 +197,29 @@ export const getAllStudentsCummulatedResults = async (
   res: Response
 ): Promise<void> => {
   try {
+    // Fetch all results and include student and subject details
     const results = await prisma.result.findMany({
       include: {
         student: true,
         subject: true,
-        // No need to include `exam` unless used later
       },
     });
 
+    // Check if results were found
     if (results.length === 0) {
       res.status(404).json({ message: "No results found for any student" });
       return;
     }
 
+    // Initialize an object to store the cumulative results for each student
     const studentResults: Record<string, any> = {};
 
+    // Iterate through each result and accumulate the data
     results.forEach((result) => {
       const studentId = result.studentId;
       const studentName = `${result.student?.name} ${result.student?.surname}`;
 
+      // If the student does not already exist in studentResults, create an entry
       if (!studentResults[studentId]) {
         studentResults[studentId] = {
           studentId,
@@ -230,16 +234,20 @@ export const getAllStudentsCummulatedResults = async (
         };
       }
 
+      // Get the current student's result object
       const student = studentResults[studentId];
 
+      // Extract individual scores, defaulting to 0 if not available
       const assignment = result.assignment ?? 0;
       const classwork = result.classwork ?? 0;
       const midterm = result.midterm ?? 0;
       const attendance = result.attendance ?? 0;
-      const examScore = result.examScore ?? 0; // ✅ Use examScore not exam
+      const examScore = result.examScore ?? 0;
 
+      // Calculate the total score for this specific result
       const total = assignment + classwork + midterm + attendance + examScore;
 
+      // Add the individual scores to the student's cumulative totals
       student.totalAssignment += assignment;
       student.totalClasswork += classwork;
       student.totalMidterm += midterm;
@@ -249,6 +257,7 @@ export const getAllStudentsCummulatedResults = async (
       student.totalSubjects += 1;
     });
 
+    // Format the cumulative results to include the average score
     const formattedResults = Object.values(studentResults).map((student: any) => {
       const averageScore =
         student.totalSubjects > 0
@@ -268,12 +277,14 @@ export const getAllStudentsCummulatedResults = async (
       };
     });
 
+    // Send the cumulative results as the response
     res.status(200).json(formattedResults);
   } catch (error) {
     console.error("Error fetching all students' results:", error);
     res.status(500).json({ message: "Failed to fetch results" });
   }
 };
+
 
 
 export const getCummulatedResultsByStudentIds = async (
