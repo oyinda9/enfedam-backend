@@ -192,6 +192,161 @@ export const getResultsByStudentId = async (
   }
 };
 
+export const getAllStudentsResults = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const results = await prisma.result.findMany({
+      include: {
+        student: true,
+        subject: true,
+        // No need to include `exam` unless used later
+      },
+    });
+
+    if (results.length === 0) {
+      res.status(404).json({ message: "No results found for any student" });
+      return;
+    }
+
+    const studentResults: Record<string, any> = {};
+
+    results.forEach((result) => {
+      const studentId = result.studentId;
+      const studentName = `${result.student?.name} ${result.student?.surname}`;
+
+      if (!studentResults[studentId]) {
+        studentResults[studentId] = {
+          studentId,
+          studentName,
+          totalAssignment: 0,
+          totalClasswork: 0,
+          totalMidterm: 0,
+          totalAttendance: 0,
+          totalExam: 0,
+          totalSubjects: 0,
+          overallTotal: 0,
+        };
+      }
+
+      const student = studentResults[studentId];
+
+      const assignment = result.assignment ?? 0;
+      const classwork = result.classwork ?? 0;
+      const midterm = result.midterm ?? 0;
+      const attendance = result.attendance ?? 0;
+      const examScore = result.examScore ?? 0; // ✅ Use examScore not exam
+
+      const total = assignment + classwork + midterm + attendance + examScore;
+
+      student.totalAssignment += assignment;
+      student.totalClasswork += classwork;
+      student.totalMidterm += midterm;
+      student.totalAttendance += attendance;
+      student.totalExam += examScore;
+      student.overallTotal += total;
+      student.totalSubjects += 1;
+    });
+
+    const formattedResults = Object.values(studentResults).map((student: any) => {
+      const averageScore =
+        student.totalSubjects > 0
+          ? student.overallTotal / student.totalSubjects
+          : 0;
+
+      return {
+        studentId: student.studentId,
+        studentName: student.studentName,
+        totalAssignment: student.totalAssignment,
+        totalClasswork: student.totalClasswork,
+        totalMidterm: student.totalMidterm,
+        totalAttendance: student.totalAttendance,
+        totalExam: student.totalExam,
+        overallTotal: student.overallTotal,
+        averageScore,
+      };
+    });
+
+    res.status(200).json(formattedResults);
+  } catch (error) {
+    console.error("Error fetching all students' results:", error);
+    res.status(500).json({ message: "Failed to fetch results" });
+  }
+};
+
+
+export const getResultsByStudentIds = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { studentId } = req.params;
+
+    // Fetch all results for the student including subject details
+    const results = await prisma.result.findMany({
+      where: { studentId },
+      include: {
+        subject: true,
+      },
+    });
+
+    if (results.length === 0) {
+      res.status(404).json({ message: 'No results found for this student' });
+      return;
+    }
+
+    const groupedResults: Record<string, any> = {};
+    let totalScore = 0;
+    let totalSubjects = 0;
+
+    results.forEach((result) => {
+      const subjectName = result.subject?.name; // Ensure subject is present
+
+      if (!subjectName) {
+        console.error(`No subject name found for result with id: ${result.id}`);
+        return; // Skip if subject name is missing
+      }
+
+      // Sum up the individual result score
+      const totalResultScore = result.score; // If score is the total, don't add components again
+
+      if (!groupedResults[subjectName]) {
+        groupedResults[subjectName] = {
+          subjectId: result.subjectId,
+          subjectName,
+          scores: [],
+        };
+      }
+
+      groupedResults[subjectName].scores.push({
+        resultId: result.id,
+        score: result.score,
+        assignment: result.assignment ?? 0,
+        classwork: result.classwork ?? 0,
+        midterm: result.midterm ?? 0,
+        attendance: result.attendance ?? 0,
+        total: totalResultScore, // Total is just the score here
+      });
+
+      totalScore += totalResultScore;
+      totalSubjects += 1;
+    });
+
+    const averageScore = totalSubjects > 0 ? totalScore / totalSubjects : 0;
+
+    res.status(200).json({
+      studentId,
+      totalScore,
+      averageScore,
+      subjects: Object.values(groupedResults),
+    });
+  } catch (error) {
+    console.error('Error fetching results:', error);
+    res.status(500).json({ message: 'Failed to fetch results' });
+  }
+};
+
 // Update a result
 export const updateResult = async (
   req: Request,
