@@ -192,7 +192,7 @@ export const getResultsByStudentId = async (
   }
 };
 
-export const getAllStudentsResults = async (
+export const getAllStudentsCummulatedResults = async (
   req: Request,
   res: Response
 ): Promise<void> => {
@@ -276,7 +276,7 @@ export const getAllStudentsResults = async (
 };
 
 
-export const getResultsByStudentIds = async (
+export const getCummulatedResultsByStudentIds = async (
   req: Request,
   res: Response
 ): Promise<void> => {
