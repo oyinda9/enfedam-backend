@@ -191,35 +191,29 @@ export const getResultsByStudentId = async (
     res.status(500).json({ message: "Failed to fetch results" });
   }
 };
-
+//for all student
 export const getAllStudentsCummulatedResults = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    // Fetch all results and include student and subject details
     const results = await prisma.result.findMany({
       include: {
         student: true,
-        subject: true,
       },
     });
 
-    // Check if results were found
     if (results.length === 0) {
       res.status(404).json({ message: "No results found for any student" });
       return;
     }
 
-    // Initialize an object to store the cumulative results for each student
     const studentResults: Record<string, any> = {};
 
-    // Iterate through each result and accumulate the data
     results.forEach((result) => {
       const studentId = result.studentId;
       const studentName = `${result.student?.name} ${result.student?.surname}`;
 
-      // If the student does not already exist in studentResults, create an entry
       if (!studentResults[studentId]) {
         studentResults[studentId] = {
           studentId,
@@ -234,20 +228,15 @@ export const getAllStudentsCummulatedResults = async (
         };
       }
 
-      // Get the current student's result object
-      const student = studentResults[studentId];
-
-      // Extract individual scores, defaulting to 0 if not available
       const assignment = result.assignment ?? 0;
       const classwork = result.classwork ?? 0;
       const midterm = result.midterm ?? 0;
       const attendance = result.attendance ?? 0;
       const examScore = result.examScore ?? 0;
 
-      // Calculate the total score for this specific result
       const total = assignment + classwork + midterm + attendance + examScore;
 
-      // Add the individual scores to the student's cumulative totals
+      const student = studentResults[studentId];
       student.totalAssignment += assignment;
       student.totalClasswork += classwork;
       student.totalMidterm += midterm;
@@ -257,27 +246,7 @@ export const getAllStudentsCummulatedResults = async (
       student.totalSubjects += 1;
     });
 
-    // Format the cumulative results to include the average score
-    const formattedResults = Object.values(studentResults).map((student: any) => {
-      const averageScore =
-        student.totalSubjects > 0
-          ? student.overallTotal / student.totalSubjects
-          : 0;
-
-      return {
-        studentId: student.studentId,
-        studentName: student.studentName,
-        totalAssignment: student.totalAssignment,
-        totalClasswork: student.totalClasswork,
-        totalMidterm: student.totalMidterm,
-        totalAttendance: student.totalAttendance,
-        totalExam: student.totalExam,
-        overallTotal: student.overallTotal,
-        averageScore,
-      };
-    });
-
-    // Send the cumulative results as the response
+    const formattedResults = Object.values(studentResults);
     res.status(200).json(formattedResults);
   } catch (error) {
     console.error("Error fetching all students' results:", error);
@@ -286,77 +255,67 @@ export const getAllStudentsCummulatedResults = async (
 };
 
 
+//for one student
 
-export const getCummulatedResultsByStudentIds = async (
+export const getOneStudentCummulatedResult = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  try {
-    const { studentId } = req.params;
+  const { studentId } = req.params;
 
-    // Fetch all results for the student including subject details
+  try {
     const results = await prisma.result.findMany({
-      where: { studentId },
+      where: {
+        studentId: studentId,
+      },
       include: {
-        subject: true,
+        student: true,
       },
     });
 
     if (results.length === 0) {
-      res.status(404).json({ message: 'No results found for this student' });
+      res.status(404).json({ message: "No results found for this student" });
       return;
     }
 
-    const groupedResults: Record<string, any> = {};
-    let totalScore = 0;
-    let totalSubjects = 0;
+    const studentName = `${results[0].student?.name} ${results[0].student?.surname}`;
+    const studentResult = {
+      studentId,
+      studentName,
+      totalAssignment: 0,
+      totalClasswork: 0,
+      totalMidterm: 0,
+      totalAttendance: 0,
+      totalExam: 0,
+      totalSubjects: 0,
+      overallTotal: 0,
+    };
 
     results.forEach((result) => {
-      const subjectName = result.subject?.name; // Ensure subject is present
+      const assignment = result.assignment ?? 0;
+      const classwork = result.classwork ?? 0;
+      const midterm = result.midterm ?? 0;
+      const attendance = result.attendance ?? 0;
+      const examScore = result.examScore ?? 0;
 
-      if (!subjectName) {
-        console.error(`No subject name found for result with id: ${result.id}`);
-        return; // Skip if subject name is missing
-      }
+      const total = assignment + classwork + midterm + attendance + examScore;
 
-      // Sum up the individual result score
-      const totalResultScore = result.score; // If score is the total, don't add components again
-
-      if (!groupedResults[subjectName]) {
-        groupedResults[subjectName] = {
-          subjectId: result.subjectId,
-          subjectName,
-          scores: [],
-        };
-      }
-
-      groupedResults[subjectName].scores.push({
-        resultId: result.id,
-        score: result.score,
-        assignment: result.assignment ?? 0,
-        classwork: result.classwork ?? 0,
-        midterm: result.midterm ?? 0,
-        attendance: result.attendance ?? 0,
-        total: totalResultScore, // Total is just the score here
-      });
-
-      totalScore += totalResultScore;
-      totalSubjects += 1;
+      studentResult.totalAssignment += assignment;
+      studentResult.totalClasswork += classwork;
+      studentResult.totalMidterm += midterm;
+      studentResult.totalAttendance += attendance;
+      studentResult.totalExam += examScore;
+      studentResult.overallTotal += total;
+      studentResult.totalSubjects += 1;
     });
 
-    const averageScore = totalSubjects > 0 ? totalScore / totalSubjects : 0;
-
-    res.status(200).json({
-      studentId,
-      totalScore,
-      averageScore,
-      subjects: Object.values(groupedResults),
-    });
+    res.status(200).json(studentResult);
   } catch (error) {
-    console.error('Error fetching results:', error);
-    res.status(500).json({ message: 'Failed to fetch results' });
+    console.error("Error fetching student result:", error);
+    res.status(500).json({ message: "Failed to fetch result" });
   }
 };
+
 
 // Update a result
 export const updateResult = async (
