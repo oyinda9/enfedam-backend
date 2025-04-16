@@ -191,34 +191,72 @@ export const getResultsByStudentId = async (
     res.status(500).json({ message: "Failed to fetch results" });
   }
 };
-//for one student
-export const getOneStudentsCummulatedResults = async (
+//for all student
+export const getAllStudentsCummulatedResults = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const studentId = req.params.id;  // Access the student ID from the route parameter
   try {
-    // Fetch results for the specific student
+    // Get all results for all students
     const results = await prisma.result.findMany({
-      where: {
-        studentId: studentId, // Filter by student ID
-      },
       include: {
-        student: true,
+        student: true, // Include student info with each result
       },
     });
 
     if (results.length === 0) {
-      res.status(404).json({ message: "No results found for this student" });
+      res.status(404).json({ message: "No results found for any student" });
       return;
     }
 
-    // Process and format the results as needed
-    // ...
+    // Create an object to group and accumulate results by student
+    const studentResults: Record<string, any> = {};
 
-    res.status(200).json(results); // Send the results to the client
+    results.forEach((result) => {
+      const studentId = result.studentId;
+      const studentName = `${result.student?.name ?? ''} ${result.student?.surname ?? ''}`;
+
+      // Initialize the student record if not already present
+      if (!studentResults[studentId]) {
+        studentResults[studentId] = {
+          studentId,
+          studentName,
+          totalAssignment: 0,
+          totalClasswork: 0,
+          totalMidterm: 0,
+          totalAttendance: 0,
+          totalExam: 0,
+          totalSubjects: 0,
+          overallTotal: 0,
+        };
+      }
+
+      const student = studentResults[studentId];
+
+      const assignment = result.assignment ?? 0;
+      const classwork = result.classwork ?? 0;
+      const midterm = result.midterm ?? 0;
+      const attendance = result.attendance ?? 0;
+      const examScore = result.examScore ?? 0;
+
+      const total = assignment + classwork + midterm + attendance + examScore;
+
+      // Accumulate the scores
+      student.totalAssignment += assignment;
+      student.totalClasswork += classwork;
+      student.totalMidterm += midterm;
+      student.totalAttendance += attendance;
+      student.totalExam += examScore;
+      student.overallTotal += total;
+      student.totalSubjects += 1;
+    });
+
+    // Convert the object to an array and send it
+    const formattedResults = Object.values(studentResults);
+
+    res.status(200).json(formattedResults);
   } catch (error) {
-    console.error("Error fetching student results:", error);
+    console.error("Error fetching cumulative results:", error);
     res.status(500).json({ message: "Failed to fetch results" });
   }
 };
@@ -226,8 +264,8 @@ export const getOneStudentsCummulatedResults = async (
 
 
 
-
-export const getAllStudentsCummulatedResults = async (
+// get ONE STUDENTS
+export const getOneStudentsCummulatedResults = async (
   req: Request,
   res: Response
 ): Promise<void> => {

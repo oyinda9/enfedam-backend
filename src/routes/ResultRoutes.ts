@@ -13,10 +13,10 @@ const router = Router();
 router.post('/', createResult);
 router.get('/', getAllResults);
 router.get('/:id', getResultById);
-router.get('/cummulativestudent', getAllStudentsCummulatedResults);
+router.get('/cummulativestudent', getOneStudentsCummulatedResults);
 
 router.get('/studentid/:id', getResultsByStudentId);
-router.get('/CummulativeStudent/:id', getOneStudentsCummulatedResults);
+router.get('/CummulativeStudent/:id', getAllStudentsCummulatedResults);
 
 router.put('/:id', updateResult);
 router.delete('/:id', deleteResult);
