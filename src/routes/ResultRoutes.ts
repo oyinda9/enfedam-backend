@@ -13,10 +13,10 @@ const router = Router();
 router.post('/', createResult);
 router.get('/', getAllResults);
 router.get('/:id', getResultById);
-// Get cumulative results for ALL students
-router.get('/cummulativestudent', getAllStudentsCummulatedResults);
+// For ALL students' cumulative results
+router.get('/cummulativestudents', getAllStudentsCummulatedResults);
 
-// Get cumulative results for ONE specific student
+// For ONE student's cumulative results
 router.get('/cummulativestudent/:id', getOneStudentsCummulatedResults);
 router.get('/studentid/:id', getResultsByStudentId);
 
