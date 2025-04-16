@@ -235,8 +235,8 @@ export const getAllStudentsCummulatedResults = async (
     const results = await prisma.result.findMany({
       include: {
         student: true,
-        exam: true,
-        subject: true,
+        exam: true,    
+        subject: true,  
       },
     });
 
@@ -249,7 +249,7 @@ export const getAllStudentsCummulatedResults = async (
 
     results.forEach((result) => {
       const studentId = result.studentId;
-      const studentName = `${result.student?.name} ${result.student?.surname}`;
+      const studentName = `${result.student?.name ?? ''} ${result.student?.surname ?? ''}`;
 
       if (!studentResults[studentId]) {
         studentResults[studentId] = {
@@ -265,8 +265,6 @@ export const getAllStudentsCummulatedResults = async (
         };
       }
 
-      const student = studentResults[studentId];
-
       const assignment = result.assignment ?? 0;
       const classwork = result.classwork ?? 0;
       const midterm = result.midterm ?? 0;
@@ -275,6 +273,7 @@ export const getAllStudentsCummulatedResults = async (
 
       const total = assignment + classwork + midterm + attendance + examScore;
 
+      const student = studentResults[studentId];
       student.totalAssignment += assignment;
       student.totalClasswork += classwork;
       student.totalMidterm += midterm;
@@ -284,17 +283,7 @@ export const getAllStudentsCummulatedResults = async (
       student.totalSubjects += 1;
     });
 
-    const formattedResults = Object.values(studentResults).map((student) => ({
-      studentId: student.studentId,
-      studentName: student.studentName,
-      totalAssignment: student.totalAssignment,
-      totalClasswork: student.totalClasswork,
-      totalMidterm: student.totalMidterm,
-      totalAttendance: student.totalAttendance,
-      totalExam: student.totalExam,
-      overallTotal: student.overallTotal,
-      totalSubjects: student.totalSubjects,
-    }));
+    const formattedResults = Object.values(studentResults);
 
     res.status(200).json(formattedResults);
   } catch (error) {
