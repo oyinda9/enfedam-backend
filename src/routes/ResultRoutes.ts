@@ -14,10 +14,9 @@ router.post('/', createResult);
 router.get('/', getAllResults);
 router.get('/:id', getResultById);
 // For ALL students' cumulative results
-router.get('/cummulativestudents', getAllStudentsCummulatedResults);
+router.get('/results/all', getAllStudentsCummulatedResults); // More specific, for ALL
+router.get('/results/:id', getOneStudentsCummulatedResults); // Specific student
 
-// For ONE student's cumulative results
-router.get('/cummulativestudent/:id', getOneStudentsCummulatedResults);
 router.get('/studentid/:id', getResultsByStudentId);
 
 
