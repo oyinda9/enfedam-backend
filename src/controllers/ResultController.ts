@@ -256,6 +256,7 @@ export const getAllStudentsCummulatedResults = async (
 };
 
 // Get cumulative results for ONE specific student
+// Get cumulative results for ONE specific student
 export const getOneStudentsCummulatedResults = async (
   req: Request,
   res: Response
@@ -291,11 +292,11 @@ export const getOneStudentsCummulatedResults = async (
       totalExam: 0,
       totalSubjects: 0,
       overallTotal: 0,
+      averageScore: 0, // Add this field for the average score
       subjectDetails: [] as any[],
     };
 
-    const uniqueSubjects = new Set<number>();
-; // Track unique subject IDs
+    const uniqueSubjects = new Set<number>(); // Track unique subject IDs
 
     results.forEach((result) => {
       const assignment = result.assignment ?? 0;
@@ -334,6 +335,11 @@ export const getOneStudentsCummulatedResults = async (
 
     // Set the correct totalSubjects count
     studentResult.totalSubjects = uniqueSubjects.size;
+
+    // Calculate average score
+    if (studentResult.totalSubjects > 0) {
+      studentResult.averageScore = studentResult.overallTotal / studentResult.totalSubjects;
+    }
 
     res.status(200).json(studentResult);
   } catch (error) {
