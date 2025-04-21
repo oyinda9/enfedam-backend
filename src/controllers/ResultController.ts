@@ -283,7 +283,7 @@ export const getOneStudentsCummulatedResults = async (
     // Initialize accumulator for the single student
     const studentResult = {
       studentId: id,
-      studentName: `${results[0].student?.name ?? ''} ${results[0].student?.surname ?? ''}`,
+      studentName: `${results[0].student?.name ?? ''} ${results[0].student?.surname ?? ''}`.trim(),
       totalAssignment: 0,
       totalClasswork: 0,
       totalMidterm: 0,
@@ -291,8 +291,11 @@ export const getOneStudentsCummulatedResults = async (
       totalExam: 0,
       totalSubjects: 0,
       overallTotal: 0,
-      subjectDetails: [] as any[], // Add subject details for single student view
+      subjectDetails: [] as any[],
     };
+
+    const uniqueSubjects = new Set<number>();
+; // Track unique subject IDs
 
     results.forEach((result) => {
       const assignment = result.assignment ?? 0;
@@ -308,7 +311,11 @@ export const getOneStudentsCummulatedResults = async (
       studentResult.totalAttendance += attendance;
       studentResult.totalExam += examScore;
       studentResult.overallTotal += total;
-      studentResult.totalSubjects += 1;
+
+      // Track unique subjects
+      if (result.subjectId) {
+        uniqueSubjects.add(result.subjectId);
+      }
 
       // Add subject details
       studentResult.subjectDetails.push({
@@ -325,12 +332,16 @@ export const getOneStudentsCummulatedResults = async (
       });
     });
 
+    // Set the correct totalSubjects count
+    studentResult.totalSubjects = uniqueSubjects.size;
+
     res.status(200).json(studentResult);
   } catch (error) {
     console.error("Error fetching student results:", error);
     res.status(500).json({ message: "Failed to fetch results" });
   }
 };
+
 
 // Update a result
 export const updateResult = async (
