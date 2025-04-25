@@ -217,11 +217,10 @@ export const assignClassesAndSubjectsToTeacher = async (
       where: { id: teacherId },
       data: {
         // Add new classes to teacher (does not remove existing classes)
-        classes: {
-          connect: classes?.map((classItem: { id: string }) => ({
-            id: classItem.id,
-          })),
-        },
+        classes: {connect: classes?.map((classIds: any) => ({
+          id: classIds,
+        })),
+},
         // Add new subjects to teacher (does not remove existing subjects)
         subjects: {
           connect: subjectIds?.map((subjectId: string) => ({
