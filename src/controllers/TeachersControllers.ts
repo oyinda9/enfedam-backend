@@ -197,3 +197,47 @@ export const deleteTeacher = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to delete teacher" });
   }
 };
+
+
+export const assignClassesAndSubjectsToTeacher = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { teacherId, classes, subjectIds } = req.body;
+
+    // Ensure teacherId, classes, and subjectIds are provided
+    if (!teacherId || (!Array.isArray(classes) && !Array.isArray(subjectIds))) {
+      res.status(400).json({ error: "Invalid request data" });
+      return;
+    }
+
+    // Update the teacher to assign new classes and subjects without removing old ones
+    const teacher = await prisma.teacher.update({
+      where: { id: teacherId },
+      data: {
+        // Add new classes to teacher (does not remove existing classes)
+        classes: {
+          connect: classes?.map((classItem: { id: string }) => ({
+            id: classItem.id,
+          })),
+        },
+        // Add new subjects to teacher (does not remove existing subjects)
+        subjects: {
+          connect: subjectIds?.map((subjectId: string) => ({
+            id: subjectId,
+          })),
+        },
+      },
+    });
+
+    res.status(200).json({
+      message: "Classes and subjects successfully assigned to teacher",
+      teacher,
+    });
+  } catch (error) {
+    console.error("Error assigning classes and subjects:", error);
+    res.status(500).json({ error: "Failed to assign classes and subjects to teacher" });
+  }
+};
+
