@@ -36,8 +36,9 @@ export const uploadReceipt = async (
     const text = result.data.text;
 
     // Regex to extract the payment amount from the receipt
-    const match = text.match(/₦?\s?(\d+(,\d{3})*(\.\d{2})?)/);
+    const match = text.match(/(?:₦|#|NGN)?\s*([\d,]+(?:\.\d{2})?)/i);
     const amount = match ? parseFloat(match[1].replace(/,/g, "")) : 0;
+    
 
     // Create a new payment record in the database
     const payment = await prisma.payment.create({
