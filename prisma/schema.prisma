@@ -35,6 +35,7 @@ model Student {
   class       Class        @relation(fields: [classId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
   subject Subject[]  @relation("StudentSubjects")
+  payments  Payment[]
 }
 
 model Teacher {
@@ -67,6 +68,7 @@ model Parent {
   createdAt DateTime  @default(now())
   role      Role      @default(USER)
   students  Student[]
+  payments  Payment[]
 }
 
 model Class {
@@ -167,7 +169,18 @@ model Announcement {
   classId     Int?
   class       Class?   @relation(fields: [classId], references: [id])
 }
+model Payment {
+  id            String    @id @default(uuid())
+  studentId     String
+  parentId      String
+  amountPaid    Float
+  receiptUrl    String
+  verified      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
 
+  student       Student   @relation(fields: [studentId], references: [id])
+  parent        Parent    @relation(fields: [parentId], references: [id])
+}
 enum UserSex {
   MALE
   FEMALE

@@ -1,3 +1,5 @@
+import path from 'path';
+
 import express, { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import cors from "cors";
@@ -13,9 +15,8 @@ import EventsRoutes from "./routes/EventRoutes";
 import AuthRoutes from "./routes/AuthRoutes";
 import subjectRoute from "./routes/subjectRoute";
 import attendRoute from "./routes/attendRoute";
-import ExamRoutes from "./routes/ExamRoutes"
-
-
+import ExamRoutes from "./routes/ExamRoutes";
+import PaymentRoute from  "./routes/PaymentRoute"
 
 
 const prisma = new PrismaClient();
@@ -23,7 +24,7 @@ const app = express();
 const port = 5003;
 app.use(cors());
 app.use(express.json());
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Use student routes
 app.use("/students", StudentRoutes);
 app.use("/parents", ParentRoutes);
@@ -36,7 +37,7 @@ app.use("/events", EventsRoutes);
 app.use("/subject", subjectRoute);
 app.use('/attendance', attendRoute);
 app.use('/exam', ExamRoutes);
-
+app.use('/payment',PaymentRoute)
 app.use("/auth", AuthRoutes);
 // Health check endpoint
 app.get("/", (req: Request, res: Response) => {
