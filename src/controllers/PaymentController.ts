@@ -17,87 +17,101 @@ const sectionFees = {
 
 
 export const uploadReceipt = async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
-    const { studentId, parentId } = req.body;
-    const file = req.file;
-  
-    if (!file || !studentId || !parentId) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
-  
-    const filePath = file.path;
-    const receiptUrl = `/uploads/${file.filename}`;
-  
-    try {
-      // Use simple Tesseract recognize method (no worker)
-      const result = await Tesseract.recognize(filePath, 'eng', {
-        logger: (m) => console.log(m), // optional
-      });
-  
-      const text = result.data.text;
-      console.log('OCR Extracted Text:\n', text);
-  
-      // Attempt to extract amount with multiple patterns
-      const amountPatterns = [
-        /(?:total|amount|paid|balance)\s*[:=]?\s*(?:₦|#|NGN)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)/i,
-        /(?:₦|#|NGN)\s*(\d{1,3}(?:,\d{3})*(?:\.\d+)?)\b/,
-        /\b(\d{3,}(?:,\d{3})*(?:\.\d+)?)\b/,
-      ];
-  
-      let amountMatch = null;
-      for (const pattern of amountPatterns) {
-        const match = text.match(pattern);
-        if (match) {
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { studentId, parentId } = req.body;
+  const file = req.file;
+
+  if (!file || !studentId || !parentId) {
+    res.status(400).json({ error: 'Missing required fields' });
+    return;
+  }
+
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+  if (!allowedMimeTypes.includes(file.mimetype)) {
+    res.status(400).json({ error: 'Only JPEG and PNG images are allowed' });
+    return;
+  }
+
+  const filePath = file.path;
+  const receiptUrl = `/uploads/${file.filename}`;
+
+  try {
+    const result = await Tesseract.recognize(filePath, 'eng', {
+      logger: (m) => console.log(m),
+    });
+
+    // Clean up and normalize the extracted text
+    let text = result.data.text
+      .replace(/[#%]+(?=\d)/g, '#') // fix '#%20,000' style glitches
+      .replace(/[^a-zA-Z0-9₦#.,\s]/g, '') // remove noisy OCR symbols
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    console.log('Cleaned OCR Text:', text);
+
+    // Patterns to match Naira amounts
+    const amountPatterns = [
+      /₦\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i,
+      /#\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i,
+      /NGN\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i,
+      /\b(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\b/, // fallback
+    ];
+
+    let amountMatch: RegExpMatchArray | null = null;
+
+    for (const pattern of amountPatterns) {
+      const match = text.match(pattern);
+      if (match) {
+        const rawAmount = match[1].replace(/,/g, '');
+        const amount = parseFloat(rawAmount);
+        if (!isNaN(amount) && amount > 0) {
+          console.log(`Pattern matched: ${pattern}`);
+          console.log(`Raw match: ${match[0]}, Extracted amount: ${match[1]}`);
           amountMatch = match;
           break;
         }
       }
-  
-      if (!amountMatch) {
-        console.log('No valid amount found in OCR text.');
-        res.status(400).json({ error: 'Could not extract a valid amount from receipt' });
-        return;
-      }
-  
-      const rawAmount = amountMatch[1].replace(/,/g, '');
-      const amount = parseFloat(rawAmount);
-  
-      if (isNaN(amount) || amount <= 0) {
-        console.log('Amount is not a valid positive number');
-        res.status(400).json({ error: 'Extracted amount is not a valid positive number' });
-        return;
-      }
-  
-      // Save to database
-      const payment = await prisma.payment.create({
-        data: {
-          studentId,
-          parentId,
-          amountPaid: amount,
-          receiptUrl,
-          verified: false,
-        },
-      });
-  
-      // Clean up file
-      try {
-        fs.unlinkSync(path.resolve(filePath));
-      } catch (cleanupError) {
-        console.error('Error cleaning up file:', cleanupError);
-      }
-  
-      res.status(200).json({
-        message: 'Receipt uploaded successfully',
-        payment,
-      });
-    } catch (error) {
-      console.error('Error processing receipt:', error);
-      res.status(500).json({ error: 'Error processing receipt' });
     }
-  };
+
+    if (!amountMatch) {
+      res.status(400).json({ error: 'Could not extract a valid Naira amount from receipt' });
+      return;
+    }
+
+    const finalAmount = parseFloat(amountMatch[1].replace(/,/g, ''));
+
+    const payment = await prisma.payment.create({
+      data: {
+        studentId,
+        parentId,
+        amountPaid: finalAmount,
+        receiptUrl,
+        verified: false,
+      },
+    });
+
+    try {
+      fs.unlinkSync(path.resolve(filePath));
+    } catch (cleanupError) {
+      console.error('File cleanup error:', cleanupError);
+    }
+
+    res.status(200).json({
+      message: 'Receipt uploaded successfully',
+      payment,
+      currency: 'NGN',
+    });
+  } catch (error) {
+    console.error('Error processing receipt:', error);
+    res.status(500).json({ error: 'Error processing receipt' });
+  }
+};
+
+
+
+
   
 // Function to handle payment verification
 export const verifyPayment = async (req: Request, res: Response) => {
