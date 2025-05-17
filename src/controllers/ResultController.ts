@@ -51,7 +51,7 @@ export const createResult = async (
     const score = totalScore; // Set score to be equal to totalScore
 
     // Step 3: Create the result
-    const result = await prisma.result.create({
+    const result:any = await prisma.result.create({
       data: {
         score, // The score is the same as the totalScore
         examScore,
@@ -102,7 +102,7 @@ export const getResultById = async (
   try {
     const { id } = req.params;
 
-    const result = await prisma.result.findUnique({
+    const result:any = await prisma.result.findUnique({
       where: { id: Number(id) },
       include: {
         student: true,
@@ -146,7 +146,7 @@ export const getResultsByStudentId = async (
     let totalScore = 0;
     let totalSubjects = 0;
 
-    results.forEach((result) => {
+    results.forEach((result:any) => {
       const subjectName = result.subject?.name; // Ensure subject is present
 
       if (!subjectName) {
@@ -223,7 +223,7 @@ export const getAllStudentsCummulatedResults = async (
       subjectCount: number;
     };
 
-    const studentResults = results.reduce<Record<string, StudentResult>>((acc, result) => {
+    const studentResults = results.reduce<Record<string, StudentResult>>((acc:any, result:any) => {
       const studentId = result.studentId;
       if (!acc[studentId]) {
         acc[studentId] = {

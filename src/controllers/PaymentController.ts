@@ -220,7 +220,7 @@ export const getPaymentSummary = async (
         expectedFee = 42000;
       }
 
-      const verifiedPayments = student.payments.filter((p) => p.verified);
+      const verifiedPayments = student.payments.filter((p:any) => p.verified);
       const totalVerified = verifiedPayments.reduce(
         (sum:any, p:any) => sum + p.amountPaid,
         0
@@ -267,7 +267,7 @@ export const getPaymentHistoryByParentId = async (
       return;
     }
 
-    const studentIds = students.map((student) => student.id);
+    const studentIds = students.map((student:any) => student.id);
 
     // Fetch all payments for those students
     const payments = await prisma.payment.findMany({
