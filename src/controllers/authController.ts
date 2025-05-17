@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient ,Role} from "@prisma/client";
+
 
 import dotenv from "dotenv";
 
@@ -23,7 +24,7 @@ export const registerAdmin = async (
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     const admin = await prisma.admin.create({
       data: {
         username,
