@@ -1,7 +1,7 @@
 // controllers/PaymentController.ts
 import { Request, Response } from "express";
 import { createWorker, RecognizeResult } from "tesseract.js";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma, Payment, Student } from "@prisma/client";
 import Tesseract from "tesseract.js";
 import fs from "fs";
 import path from "path";
@@ -14,6 +14,14 @@ const sectionFees = {
   primary: 35000, // Fee for Primary section
   secondary: 42000, // Fee for Secondary section
 };
+
+interface PaymentWithStudent extends Payment {
+  student: Student & {
+    class: {
+      name: string;
+    };
+  };
+}
 
 export const uploadReceipt = async (
   req: Request,
@@ -110,18 +118,15 @@ export const uploadReceipt = async (
   }
 };
 
-// Function to handle payment verification
-export const verifyPayment = async (req: Request, res: Response) => {
+export const verifyPayment = async (req: Request, res: Response): Promise<void> => {
   const { paymentId } = req.params;
 
   try {
-    // Update the payment status to verified
     const updated = await prisma.payment.update({
       where: { id: paymentId },
       data: { verified: true },
     });
 
-    // Respond with a success message and the updated payment details
     res.status(200).json({ message: "Payment verified", updated });
   } catch (error) {
     console.error(error);
@@ -129,12 +134,10 @@ export const verifyPayment = async (req: Request, res: Response) => {
   }
 };
 
-// Function to check payment status
-export const checkPaymentStatus = async (req: Request, res: Response) => {
+export const checkPaymentStatus = async (req: Request, res: Response): Promise<void> => {
   const { studentId } = req.params;
 
   try {
-    // Fetch student and class name
     const student = await prisma.student.findUnique({
       where: { id: studentId },
       select: {
@@ -147,10 +150,11 @@ export const checkPaymentStatus = async (req: Request, res: Response) => {
     });
 
     if (!student || !student.class) {
-      return res.status(404).json({ error: "Student or class not found" });
+      res.status(404).json({ error: "Student or class not found" });
+      return;
     }
 
-    const className = student.class.name.toLowerCase(); // Now safe to call toLowerCase
+    const className = student.class.name.toLowerCase();
 
     let feeAmount = 0;
     if (className.includes("nursery")) {
@@ -160,17 +164,15 @@ export const checkPaymentStatus = async (req: Request, res: Response) => {
     } else if (className.includes("secondary") || className.includes("ss")) {
       feeAmount = sectionFees.secondary;
     } else {
-      return res
-        .status(400)
-        .json({ error: "Could not determine section from class name" });
+      res.status(400).json({ error: "Could not determine section from class name" });
+      return;
     }
 
-    // Fetch all payments made by this student
     const payments = await prisma.payment.findMany({
       where: { studentId },
     });
 
-    const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
+    const totalPaid = payments.reduce((sum: number, p: { amountPaid: number }) => sum + p.amountPaid, 0);
 
     let status = "";
     if (totalPaid === 0) status = "Not Paid";
@@ -196,6 +198,14 @@ export const getPaymentSummary = async (
   res: Response
 ): Promise<void> => {
   try {
+    // Define the type for students with their class and payments
+    type StudentWithClassAndPayments = Prisma.StudentGetPayload<{
+      include: {
+        class: true;
+        payments: true;
+      };
+    }>;
+
     const students = await prisma.student.findMany({
       include: {
         class: true,
@@ -203,14 +213,14 @@ export const getPaymentSummary = async (
       },
     });
 
-    const fullyPaid: any[] = [];
-    const awaitingVerification: any[] = [];
-    const notPaid: any[] = [];
+    // Change the array types to match what we're actually storing (students with their payments)
+    const fullyPaid: StudentWithClassAndPayments[] = [];
+    const awaitingVerification: StudentWithClassAndPayments[] = [];
+    const notPaid: StudentWithClassAndPayments[] = [];
 
     for (const student of students) {
       const className = student.class.name.toLowerCase();
 
-      // Determine fee based on class name
       let expectedFee = 0;
       if (className.includes("nursery")) {
         expectedFee = 30000;
@@ -233,7 +243,7 @@ export const getPaymentSummary = async (
       } else if (totalVerified >= expectedFee) {
         fullyPaid.push(student);
       } else {
-        awaitingVerification.push(student); // or you could create a new `partiallyPaid` array
+        awaitingVerification.push(student);
       }
     }
 
@@ -244,9 +254,7 @@ export const getPaymentSummary = async (
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ error: "Something went wrong while generating summary" });
+    res.status(500).json({ error: "Something went wrong while generating summary" });
   }
 };
 
@@ -257,7 +265,6 @@ export const getPaymentHistoryByParentId = async (
   const { parentId } = req.params;
 
   try {
-    // Find all students belonging to the parent
     const students = await prisma.student.findMany({
       where: { parentId },
     });
@@ -267,16 +274,21 @@ export const getPaymentHistoryByParentId = async (
       return;
     }
 
-    const studentIds = students.map((student) => student.id);
+    const studentIds = students.map((student: { id: string }) => student.id);
 
-    // Fetch all payments for those students
     const payments = await prisma.payment.findMany({
       where: { studentId: { in: studentIds } },
       orderBy: { createdAt: "desc" },
     });
 
-    const response = payments.map((payment) => ({
-      date: payment.createdAt.toISOString().split("T")[0], // assuming createdAt field exists
+    const response = payments.map((payment: { 
+      createdAt: Date, 
+      receiptUrl: string, 
+      amountPaid: number, 
+      verified: boolean, 
+      studentId: string 
+    }) => ({
+      date: payment.createdAt.toISOString().split("T")[0],
       receiptUrl: payment.receiptUrl,
       amount: payment.amountPaid,
       verified: payment.verified,
