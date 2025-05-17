@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-   output   = "./node_modules/.prisma/client"
+  output   = "./node_modules/.prisma/client"
 }
 
 datasource db {
@@ -32,11 +32,11 @@ model Student {
   birthday    DateTime
   role        Role         @default(STUDENT)
   attendances Attendance[]
+  payments    Payment[]
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
-  subject Subject[]  @relation("StudentSubjects")
-  payments  Payment[]
+  subject     Subject[]    @relation("StudentSubjects")
 }
 
 model Teacher {
@@ -68,8 +68,8 @@ model Parent {
   address   String
   createdAt DateTime  @default(now())
   role      Role      @default(USER)
-  students  Student[]
   payments  Payment[]
+  students  Student[]
 }
 
 model Class {
@@ -86,11 +86,11 @@ model Class {
 model Subject {
   id       Int       @id @default(autoincrement())
   name     String    @unique
-  lessons  Lesson[]
   exams    Exam[]
-  teachers Teacher[] @relation("SubjectToTeacher")
+  lessons  Lesson[]
   Result   Result[]
-  students Student[]  @relation("StudentSubjects")
+  students Student[] @relation("StudentSubjects")
+  teachers Teacher[] @relation("SubjectToTeacher")
 }
 
 model Lesson {
@@ -103,18 +103,17 @@ model Lesson {
   classId     Int
   teacherId   String
   assignments Assignment[]
-
-  class   Class   @relation(fields: [classId], references: [id])
-  subject Subject @relation(fields: [subjectId], references: [id])
-  teacher Teacher @relation(fields: [teacherId], references: [id])
+  class       Class        @relation(fields: [classId], references: [id])
+  subject     Subject      @relation(fields: [subjectId], references: [id])
+  teacher     Teacher      @relation(fields: [teacherId], references: [id])
 }
 
 model Exam {
   id        Int      @id @default(autoincrement())
   subjectId Int
+  score     Int
   subject   Subject  @relation(fields: [subjectId], references: [id])
-  results   Result[] // Associate results to the exam
-  score     Int // Exam score
+  results   Result[]
 }
 
 model Assignment {
@@ -130,9 +129,9 @@ model Result {
   id           Int     @id @default(autoincrement())
   score        Float
   examId       Int?
-  examScore    Int?     // <-- optional
-  totalScore   Float?   // <-- optional
-  averageScore Float?   // <-- optional
+  examScore    Int?
+  totalScore   Float?
+  averageScore Float?
   studentId    String
   subjectId    Int
   assignment   Float   @default(0)
@@ -143,9 +142,6 @@ model Result {
   student      Student @relation(fields: [studentId], references: [id])
   subject      Subject @relation(fields: [subjectId], references: [id])
 }
-
-
-
 
 model Attendance {
   id        Int      @id @default(autoincrement())
@@ -170,18 +166,19 @@ model Announcement {
   classId     Int?
   class       Class?   @relation(fields: [classId], references: [id])
 }
-model Payment {
-  id            String    @id @default(uuid())
-  studentId     String
-  parentId      String
-  amountPaid    Float
-  receiptUrl    String
-  verified      Boolean   @default(false)
-  createdAt     DateTime  @default(now())
 
-  student       Student   @relation(fields: [studentId], references: [id])
-  parent        Parent    @relation(fields: [parentId], references: [id])
+model Payment {
+  id         String   @id @default(uuid())
+  studentId  String
+  parentId   String
+  amountPaid Float
+  receiptUrl String
+  verified   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  parent     Parent   @relation(fields: [parentId], references: [id])
+  student    Student  @relation(fields: [studentId], references: [id])
 }
+
 enum UserSex {
   MALE
   FEMALE

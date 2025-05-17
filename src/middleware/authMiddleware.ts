@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { Role } from "@prisma/client";  // Import the Role enum from Prisma
+import {  Role } from '@prisma/client'
+
 dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET;
 
