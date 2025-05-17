@@ -127,7 +127,7 @@ export const getAllAttendanceByClassStats = async (
 
     const groupedAttendance: { [key: string]: any } = {};
 
-    attendanceRecords.forEach((record) => {
+    attendanceRecords.forEach((record:RecordType) => {
       const classId = record.student.class.id;
       const className = record.student.class.name;
       const gender = record.student.sex;
