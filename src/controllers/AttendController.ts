@@ -1,7 +1,7 @@
 // @ts-ignore
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
-
+import { RecordType } from '../shared/index';
 const prisma = new PrismaClient();
 
 export const createAttendance = async (
@@ -81,7 +81,7 @@ export const getAllAttendanceByClass = async (
     // Define the type for grouped attendance
     const groupedAttendance: { [key: string]: GroupedAttendance } = {}; // Use the GroupedAttendance interface
 
-    attendanceRecords.forEach((record) => {
+    attendanceRecords.forEach((record:RecordType) => {
       const classId = record.student.class.id;
       const className = record.student.class.name;
 
