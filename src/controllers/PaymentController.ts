@@ -1,4 +1,5 @@
 // controllers/PaymentController.ts
+// @ts-ignore
 import { Request, Response } from "express";
 import { createWorker, RecognizeResult } from "tesseract.js";
 import { PrismaClient } from "@prisma/client";
@@ -170,7 +171,7 @@ export const checkPaymentStatus = async (req: Request, res: Response) => {
       where: { studentId },
     });
 
-    const totalPaid = payments.reduce((sum:any, p:any) => sum + p.amountPaid, 0);
+    const totalPaid = payments.reduce((sum, p) => sum + p.amountPaid, 0);
 
     let status = "";
     if (totalPaid === 0) status = "Not Paid";
@@ -220,9 +221,9 @@ export const getPaymentSummary = async (
         expectedFee = 42000;
       }
 
-      const verifiedPayments = student.payments.filter((p:any) => p.verified);
+      const verifiedPayments = student.payments.filter((p) => p.verified);
       const totalVerified = verifiedPayments.reduce(
-        (sum:any, p:any) => sum + p.amountPaid,
+        (sum, p) => sum + p.amountPaid,
         0
       );
 
@@ -267,7 +268,7 @@ export const getPaymentHistoryByParentId = async (
       return;
     }
 
-    const studentIds = students.map((student:any) => student.id);
+    const studentIds = students.map((student) => student.id);
 
     // Fetch all payments for those students
     const payments = await prisma.payment.findMany({
@@ -275,7 +276,7 @@ export const getPaymentHistoryByParentId = async (
       orderBy: { createdAt: "desc" },
     });
 
-    const response = payments.map((payment:any) => ({
+    const response = payments.map((payment) => ({
       date: payment.createdAt.toISOString().split("T")[0], // assuming createdAt field exists
       receiptUrl: payment.receiptUrl,
       amount: payment.amountPaid,

@@ -1,3 +1,4 @@
+// @ts-ignore
 import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 
@@ -298,7 +299,7 @@ export const getOneStudentsCummulatedResults = async (
 
     const uniqueSubjects = new Set<number>(); // Track unique subject IDs
 
-    results.forEach((result:any) => {
+    results.forEach((result) => {
       const assignment = result.assignment ?? 0;
       const classwork = result.classwork ?? 0;
       const midterm = result.midterm ?? 0;
