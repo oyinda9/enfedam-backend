@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { connect } from "http2";
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 const prisma = new PrismaClient();
 
@@ -176,10 +177,10 @@ export const updateTeacher = async (req: Request, res: Response):Promise<void> =
   } catch (error) {
     console.error("Error updating teacher:", error);
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2025") {
-         res.status(404).json({ error: "Teacher not found" });
-         return
+    if (error instanceof PrismaClientKnownRequestError) {
+      if ((error as PrismaClientKnownRequestError).code === 'P2025') {
+        res.status(404).json({ error: 'Teacher not found' });
+        return;
       }
     }
 

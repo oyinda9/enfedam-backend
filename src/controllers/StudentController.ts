@@ -122,7 +122,7 @@ export const createStudent = async (
       sex: sex.toUpperCase(),
       birthday: parsedBirthday,
       subject: {
-        connect: validSubjectIds.map((s) => ({ id: s.id })), // ✅ connect subjects
+        connect: validSubjectIds.map((s:any) => ({ id: s.id })), // ✅ connect subjects
       },
     };
 
