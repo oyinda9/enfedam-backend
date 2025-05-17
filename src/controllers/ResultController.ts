@@ -35,7 +35,7 @@ export const createResult = async (
     }
 
     const isTakingSubject = student.subject.some(
-      (subject) => subject.id === subjectId
+      (subject:any) => subject.id === subjectId
     );
     if (!isTakingSubject) {
       res
