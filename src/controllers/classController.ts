@@ -52,6 +52,7 @@ export class ClassController {
           students: true,
           announcements: true,
           lessons: true,
+          subjects:true
         },
       });
 
@@ -73,6 +74,7 @@ export class ClassController {
           students: true,
           announcements: true,
           lessons: true,
+          subjects:true
         },
       });
 
