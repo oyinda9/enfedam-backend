@@ -25,7 +25,7 @@ export const createResult = async (
     const student = await prisma.student.findUnique({
       where: { id: studentId },
       include: {
-        subject: true,
+        Subject: true,
       },
     });
 
@@ -34,7 +34,7 @@ export const createResult = async (
       return;
     }
 
-    const isTakingSubject = student.subject.some(
+    const isTakingSubject = student.Subject.some(
       (subject:any) => subject.id === subjectId
     );
     if (!isTakingSubject) {
