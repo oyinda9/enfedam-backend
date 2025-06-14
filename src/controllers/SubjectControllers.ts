@@ -20,24 +20,41 @@ export const createSubject =  async (
     }
 
     // Create the subject
-    const subject = await prisma.subject.create({
+    const createdSubject = await prisma.subject.create({
       data: {
         name,
         classId ,
       },
     });
+     // Fetch the subject again including the class relation
+    const subjectWithClass = await prisma.subject.findUnique({
+      where: { id: createdSubject.id },
+      include: {
+        class: {
+          select: {
+            id: true,
+            name: true, // Include class name
+          },
+        },
+      },
+    });
 
-    res.status(201).json(subject);
+    res.status(201).json(subjectWithClass);
   } catch (error) {
     console.error('Error creating subject:', error);
-    res.status(500).json({ error: 'Failed to create subject' });
+    if (typeof error === 'object' && error !== null && 'code' in error && (error as any).code === 'P2002') {
+      // Prisma unique constraint failed
+      res.status(409).json({ error: 'Subject already exists' });
+    } else {
+      res.status(500).json({ error: 'Internal server error' });
+    }
   }
 };
 
 
 export const getAllSubjects = async (_req: Request, res: Response) => {
   try {
-    const subjects = await prisma.subject.findMany({ include: { teachers: true, lessons: true ,exams:true } });
+    const subjects = await prisma.subject.findMany({ include: { teachers: true, lessons: true ,exams:true,class:true } });
     res.json(subjects);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch subjects' });
