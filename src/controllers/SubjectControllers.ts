@@ -2,7 +2,10 @@ import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
-export const createSubject = async (req: Request, res: Response) => {
+export const createSubject =  async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { name, classId } = req.body;
 
@@ -12,7 +15,8 @@ export const createSubject = async (req: Request, res: Response) => {
     });
 
     if (!existingClass) {
-      return res.status(404).json({ error: 'Class not found' });
+       res.status(404).json({ error: 'Class not found' });
+       return
     }
 
     // Create the subject
