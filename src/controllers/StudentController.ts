@@ -50,7 +50,7 @@ export const createStudent = async (
     img,
     bloodType,
     sex,
-    parentId,
+    parentId=[],
     classId,
     birthday,
     subjectIds = [], // ✅ include subjectIds
