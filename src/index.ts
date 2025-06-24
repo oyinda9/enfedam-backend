@@ -21,7 +21,7 @@ import PaymentRoute from  "./routes/PaymentRoute"
 
 const prisma = new PrismaClient();
 const app = express();
-const port = 5003;
+const port = 5000;
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
