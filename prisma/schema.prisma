@@ -16,6 +16,14 @@ model Admin {
   password String
 }
 
+
+model Executive {
+  id       String @id @default(uuid())
+  username String @unique
+  role     Role   @default(EXECUTIVE)
+  password String
+}
+
 model Student {
   id          String       @id @default(uuid())
   username    String       @unique
@@ -190,6 +198,7 @@ enum UserSex {
 
 enum Role {
   ADMIN
+  EXECUTIVE
   TEACHER
   STUDENT
   USER
