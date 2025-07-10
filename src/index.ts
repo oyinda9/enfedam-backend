@@ -16,7 +16,8 @@ import AuthRoutes from "./routes/AuthRoutes";
 import subjectRoute from "./routes/subjectRoute";
 import attendRoute from "./routes/attendRoute";
 import ExamRoutes from "./routes/ExamRoutes";
-import PaymentRoute from  "./routes/PaymentRoute"
+import PaymentRoute from  "./routes/PaymentRoute";
+import reportRoute from "./routes/reportRoute";
 
 
 const prisma = new PrismaClient();
@@ -38,7 +39,9 @@ app.use("/subject", subjectRoute);
 app.use('/attendance', attendRoute);
 app.use('/exam', ExamRoutes);
 app.use('/payment',PaymentRoute)
+app.use("/report", reportRoute);
 app.use("/auth", AuthRoutes);
+
 // Health check endpoint
 app.get("/", (req: Request, res: Response) => {
   res.send("School Management System Backend is running!");
