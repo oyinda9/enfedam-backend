@@ -3,6 +3,14 @@ import { Class, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Define interface for class with relations
+interface ClassWithRelations extends Class {
+  students: any[];
+  subjects: any[];
+  lessons: any[];
+  announcements: any[];
+}
+
 // ✅ Get all sections (with or without classes)
 export const getSections = async (
   req: Request,
@@ -10,7 +18,7 @@ export const getSections = async (
 ): Promise<void> => {
   try {
     const sections = await prisma.section.findMany({
-      include: { classes: true }, // remove if you only want sections
+      include: { classes: true },
     });
     res.json(sections);
   } catch (error: any) {
@@ -151,33 +159,28 @@ export const getSectionStats = async (
       return;
     }
 
-    const totalClasses = section.classes.length;
+    // Cast classes to the extended interface for type safety
+    const classesWithRelations = section.classes as unknown as ClassWithRelations[];
 
-    const totalStudents = section.classes.reduce(
-      (sum: number, cls: { students: any[] }) => {
-        return sum + cls.students.length;
-      },
+    const totalClasses = classesWithRelations.length;
+
+    const totalStudents = classesWithRelations.reduce(
+      (sum: number, cls: ClassWithRelations) => sum + cls.students.length,
       0
     );
 
-    const totalSubjects = section.classes.reduce(
-      (sum: number, cls: { subjects: any[] }) => {
-        return sum + cls.subjects.length;
-      },
+    const totalSubjects = classesWithRelations.reduce(
+      (sum: number, cls: ClassWithRelations) => sum + cls.subjects.length,
       0
     );
 
-    const totalLessons = section.classes.reduce(
-      (sum: number, cls: { lessons: any[] }) => {
-        return sum + cls.lessons.length;
-      },
+    const totalLessons = classesWithRelations.reduce(
+      (sum: number, cls: ClassWithRelations) => sum + cls.lessons.length,
       0
     );
 
-    const totalAnnouncements = section.classes.reduce(
-      (sum: number, cls: { announcements: any[] }) => {
-        return sum + cls.announcements.length;
-      },
+    const totalAnnouncements = classesWithRelations.reduce(
+      (sum: number, cls: ClassWithRelations) => sum + cls.announcements.length,
       0
     );
 
@@ -190,7 +193,7 @@ export const getSectionStats = async (
         totalLessons,
         totalAnnouncements,
       },
-      classes: section.classes.map((cls) => ({
+      classes: classesWithRelations.map((cls) => ({
         id: cls.id,
         name: cls.name,
         students: cls.students.length,
