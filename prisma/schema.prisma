@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-
 }
 
 datasource db {
@@ -15,7 +14,6 @@ model Admin {
   role     Role   @default(ADMIN)
   password String
 }
-
 
 model Executive {
   id       String @id @default(uuid())
@@ -81,11 +79,19 @@ model Parent {
   students  Student[]
 }
 
+model Section {
+  id      Int     @id @default(autoincrement())
+  name    String  @unique
+  classes Class[]
+}
+
 model Class {
-  id            Int            @id @default(autoincrement())
-  name          String         @unique
-  capacity      Int
-  supervisorId  String?
+  id           Int     @id @default(autoincrement())
+  name         String  @unique
+  capacity     Int
+  supervisorId String?
+  sectionId    Int?
+  section       Section?        @relation(fields: [sectionId], references: [id])
   announcements Announcement[]
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   lessons       Lesson[]
