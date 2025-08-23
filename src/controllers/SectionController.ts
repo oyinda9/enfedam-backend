@@ -1,22 +1,30 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { Class, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 // ✅ Get all sections (with or without classes)
-export const getSections = async (req: Request, res: Response): Promise<void> => {
+export const getSections = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const sections = await prisma.section.findMany({
       include: { classes: true }, // remove if you only want sections
     });
     res.json(sections);
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to fetch sections", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch sections", details: error.message });
   }
 };
 
 // ✅ Get a single section by id
-export const getSectionById = async (req: Request, res: Response): Promise<void> => {
+export const getSectionById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -35,12 +43,17 @@ export const getSectionById = async (req: Request, res: Response): Promise<void>
     }
     res.json(section);
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to fetch section", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch section", details: error.message });
   }
 };
 
 // ✅ Create a new section
-export const createSection = async (req: Request, res: Response): Promise<void> => {
+export const createSection = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { name } = req.body;
     if (!name) {
@@ -53,12 +66,17 @@ export const createSection = async (req: Request, res: Response): Promise<void> 
     });
     res.status(201).json(section);
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to create section", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to create section", details: error.message });
   }
 };
 
 // ✅ Update a section
-export const updateSection = async (req: Request, res: Response): Promise<void> => {
+export const updateSection = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -73,12 +91,17 @@ export const updateSection = async (req: Request, res: Response): Promise<void> 
     });
     res.json(section);
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to update section", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to update section", details: error.message });
   }
 };
 
 // ✅ Delete a section
-export const deleteSection = async (req: Request, res: Response): Promise<void> => {
+export const deleteSection = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
@@ -91,12 +114,17 @@ export const deleteSection = async (req: Request, res: Response): Promise<void> 
     });
     res.json({ message: "Section deleted successfully" });
   } catch (error: any) {
-    res.status(500).json({ error: "Failed to delete section", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to delete section", details: error.message });
   }
 };
 
 // ✅ Get statistics for a section
-export const getSectionStats = async (req: Request, res: Response): Promise<void> => {
+export const getSectionStats = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const sectionId = parseInt(req.params.id, 10);
     if (isNaN(sectionId)) {
@@ -124,10 +152,34 @@ export const getSectionStats = async (req: Request, res: Response): Promise<void
     }
 
     const totalClasses = section.classes.length;
-    const totalStudents = section.classes.reduce((sum, cls) => sum + cls.students.length, 0);
-    const totalSubjects = section.classes.reduce((sum, cls) => sum + cls.subjects.length, 0);
-    const totalLessons = section.classes.reduce((sum, cls) => sum + cls.lessons.length, 0);
-    const totalAnnouncements = section.classes.reduce((sum, cls) => sum + cls.announcements.length, 0);
+
+    const totalStudents = section.classes.reduce(
+      (sum: number, cls: { students: any[] }) => {
+        return sum + cls.students.length;
+      },
+      0
+    );
+
+    const totalSubjects = section.classes.reduce(
+      (sum: number, cls: { subjects: any[] }) => {
+        return sum + cls.subjects.length;
+      },
+      0
+    );
+
+    const totalLessons = section.classes.reduce(
+      (sum: number, cls: { lessons: any[] }) => {
+        return sum + cls.lessons.length;
+      },
+      0
+    );
+
+    const totalAnnouncements = section.classes.reduce(
+      (sum: number, cls: { announcements: any[] }) => {
+        return sum + cls.announcements.length;
+      },
+      0
+    );
 
     res.json({
       section: section.name,
@@ -149,6 +201,8 @@ export const getSectionStats = async (req: Request, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error(error);
-    res.status(500).json({ error: "Failed to fetch section stats", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch section stats", details: error.message });
   }
 };
