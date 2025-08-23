@@ -10,25 +10,32 @@ export const getSections = async (req: Request, res: Response): Promise<void> =>
       include: { classes: true }, // remove if you only want sections
     });
     res.json(sections);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch sections" });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch sections", details: error.message });
   }
 };
 
 // ✅ Get a single section by id
 export const getSectionById = async (req: Request, res: Response): Promise<void> => {
   try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid section id" });
+      return;
+    }
+
     const section = await prisma.section.findUnique({
-      where: { id: Number(req.params.id) },
+      where: { id },
       include: { classes: true },
     });
+
     if (!section) {
       res.status(404).json({ error: "Section not found" });
       return;
     }
     res.json(section);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch section" });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch section", details: error.message });
   }
 };
 
@@ -36,45 +43,66 @@ export const getSectionById = async (req: Request, res: Response): Promise<void>
 export const createSection = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name } = req.body;
+    if (!name) {
+      res.status(400).json({ error: "Section name is required" });
+      return;
+    }
+
     const section = await prisma.section.create({
       data: { name },
     });
     res.status(201).json(section);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to create section" });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to create section", details: error.message });
   }
 };
 
 // ✅ Update a section
 export const updateSection = async (req: Request, res: Response): Promise<void> => {
   try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid section id" });
+      return;
+    }
+
     const { name } = req.body;
     const section = await prisma.section.update({
-      where: { id: Number(req.params.id) },
+      where: { id },
       data: { name },
     });
     res.json(section);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to update section" });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to update section", details: error.message });
   }
 };
 
 // ✅ Delete a section
 export const deleteSection = async (req: Request, res: Response): Promise<void> => {
   try {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid section id" });
+      return;
+    }
+
     await prisma.section.delete({
-      where: { id: Number(req.params.id) },
+      where: { id },
     });
     res.json({ message: "Section deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to delete section" });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to delete section", details: error.message });
   }
 };
 
 // ✅ Get statistics for a section
 export const getSectionStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const sectionId = Number(req.params.id);
+    const sectionId = parseInt(req.params.id, 10);
+    if (isNaN(sectionId)) {
+      res.status(400).json({ error: "Invalid section id" });
+      return;
+    }
 
     const section = await prisma.section.findUnique({
       where: { id: sectionId },
@@ -119,8 +147,8 @@ export const getSectionStats = async (req: Request, res: Response): Promise<void
         announcements: cls.announcements.length,
       })),
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    res.status(500).json({ error: "Failed to fetch section stats" });
+    res.status(500).json({ error: "Failed to fetch section stats", details: error.message });
   }
 };
