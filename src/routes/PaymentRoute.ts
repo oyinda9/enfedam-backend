@@ -1,6 +1,9 @@
 // routes/paymentRoutes.ts
 import express from "express";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
+
 import {
   uploadReceipt,
   verifyPayment,
@@ -10,25 +13,30 @@ import {
   getPaymentHistoryByParentId,
   setSectionFee,
   getSectionFees,
-  getPaymentsAwaitingVerification
+  getPaymentsAwaitingVerification,
 } from "../controllers/PaymentController";
-import path from "path";
 
 const router = express.Router();
+
+// Ensure uploads/receipts directory exists
+const uploadDir = path.join(__dirname, "../uploads/receipts");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/receipts/');
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     // Generate unique filename
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
+  },
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
@@ -39,8 +47,8 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
 });
 
 // Parent routes
