@@ -78,20 +78,22 @@ model Parent {
   payments  Payment[]
   students  Student[]
 }
-
 model Section {
-  id      Int     @id @default(autoincrement())
-  name    String  @unique
+  id      Int      @id @default(autoincrement())
+  name    String   @unique
   classes Class[]
+  fee     SectionFee? 
+  
 }
 
+
 model Class {
-  id           Int     @id @default(autoincrement())
-  name         String  @unique
-  capacity     Int
-  supervisorId String?
-  sectionId    Int?
-  section       Section?        @relation(fields: [sectionId], references: [id])
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  capacity      Int
+  supervisorId  String?
+  sectionId     Int?
+  section       Section?       @relation(fields: [sectionId], references: [id])
   announcements Announcement[]
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   lessons       Lesson[]
@@ -186,17 +188,26 @@ model Announcement {
 }
 
 model Payment {
-  id         String   @id @default(uuid())
-  studentId  String
-  parentId   String
-  amountPaid Float
-  receiptUrl String
-  verified   Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  parent     Parent   @relation(fields: [parentId], references: [id])
-  student    Student  @relation(fields: [studentId], references: [id])
+  id              String   @id @default(uuid())
+  studentId       String
+  parentId        String
+  amountPaid      Float
+  receiptUrl      String
+  rejectionReason String?
+  verified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  parent          Parent   @relation(fields: [parentId], references: [id])
+  student         Student  @relation(fields: [studentId], references: [id])
 }
 
+model SectionFee {
+  id        Int      @id @default(autoincrement())
+  sectionId Int      @unique
+  amount    Float
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 enum UserSex {
   MALE
   FEMALE

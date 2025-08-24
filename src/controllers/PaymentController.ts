@@ -1,112 +1,83 @@
 // controllers/PaymentController.ts
 import { Request, Response } from "express";
-import { createWorker, RecognizeResult } from "tesseract.js";
 import { PrismaClient } from "@prisma/client";
-import Tesseract from "tesseract.js";
 import fs from "fs";
 import path from "path";
 
 const prisma = new PrismaClient();
 
-// Define the fee structure based on keywords in class name
-const sectionFees = {
-  nursery: 30000, // Fee for Nursery section
-  primary: 35000, // Fee for Primary section
-  secondary: 42000, // Fee for Secondary section
-};
-
 export const uploadReceipt = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { studentId, parentId } = req.body;
+  const { studentId, parentId, amountPaid } = req.body;
   const file = req.file;
 
-  if (!file || !studentId || !parentId) {
+  if (!file || !studentId || !parentId || !amountPaid) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
 
-  const allowedMimeTypes = ["image/jpeg", "image/png", "image/jpg"];
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+    "application/pdf",
+  ];
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    res.status(400).json({ error: "Only JPEG and PNG images are allowed" });
+    res
+      .status(400)
+      .json({ error: "Only JPEG, PNG images and PDF files are allowed" });
     return;
   }
 
-  const filePath = file.path;
-  const receiptUrl = `/uploads/${file.filename}`;
-
   try {
-    const result = await Tesseract.recognize(filePath, "eng", {
-      logger: (m) => console.log(m),
-    });
+    // Store the receipt file in a dedicated uploads directory
+    const uploadsDir = path.join(process.cwd(), "uploads", "receipts");
 
-    // Clean up and normalize the extracted text
-    let text = result.data.text
-      .replace(/[#%]+(?=\d)/g, "#") // fix '#%20,000' style glitches
-      .replace(/[^a-zA-Z0-9₦#.,\s]/g, "") // remove noisy OCR symbols
-      .replace(/\s+/g, " ")
-      .trim();
-
-    console.log("Cleaned OCR Text:", text);
-
-    // Patterns to match Naira amounts
-    const amountPatterns = [
-      /₦\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i,
-      /#\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i,
-      /NGN\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i,
-      /\b(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\b/, // fallback
-    ];
-
-    let amountMatch: RegExpMatchArray | null = null;
-
-    for (const pattern of amountPatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        const rawAmount = match[1].replace(/,/g, "");
-        const amount = parseFloat(rawAmount);
-        if (!isNaN(amount) && amount > 0) {
-          console.log(`Pattern matched: ${pattern}`);
-          console.log(`Raw match: ${match[0]}, Extracted amount: ${match[1]}`);
-          amountMatch = match;
-          break;
-        }
-      }
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    if (!amountMatch) {
-      res
-        .status(400)
-        .json({ error: "Could not extract a valid Naira amount from receipt" });
-      return;
-    }
+    // Generate a unique filename
+    const uniqueFilename = `${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}-${file.originalname}`;
+    const filePath = path.join(uploadsDir, uniqueFilename);
 
-    const finalAmount = parseFloat(amountMatch[1].replace(/,/g, ""));
+    // Move the file to the uploads directory
+    fs.renameSync(file.path, filePath);
+
+    const receiptUrl = `/uploads/receipts/${uniqueFilename}`;
 
     const payment = await prisma.payment.create({
       data: {
         studentId,
         parentId,
-        amountPaid: finalAmount,
+        amountPaid: parseFloat(amountPaid),
         receiptUrl,
         verified: false,
       },
     });
 
+    res.status(200).json({
+      message: "Receipt uploaded successfully, awaiting verification",
+      payment,
+    });
+  } catch (error) {
+    console.error("Error uploading receipt:", error);
+
+    // Clean up the temporary file if there was an error
     try {
-      fs.unlinkSync(path.resolve(filePath));
+      if (file && file.path) {
+        fs.unlinkSync(file.path);
+      }
     } catch (cleanupError) {
       console.error("File cleanup error:", cleanupError);
     }
 
-    res.status(200).json({
-      message: "Receipt uploaded successfully",
-      payment,
-      currency: "NGN",
-    });
-  } catch (error) {
-    console.error("Error processing receipt:", error);
-    res.status(500).json({ error: "Error processing receipt" });
+    res.status(500).json({ error: "Error uploading receipt" });
   }
 };
 
@@ -129,48 +100,75 @@ export const verifyPayment = async (req: Request, res: Response) => {
   }
 };
 
+// Function to reject/unverify a payment
+export const rejectPayment = async (req: Request, res: Response) => {
+  const { paymentId } = req.params;
+  const { reason } = req.body;
+
+  try {
+    // Update the payment status to unverified and add rejection reason
+    const updated = await prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        verified: false,
+        rejectionReason: reason || "Payment rejected by administrator",
+      },
+    });
+
+    res.status(200).json({ message: "Payment rejected", updated });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ error: "Unable to reject payment" });
+  }
+};
+
 // Function to check payment status
-export const checkPaymentStatus = async (req: Request, res: Response) => {
+export const checkPaymentStatus = async (req: Request, res: Response): Promise<void> => {
   const { studentId } = req.params;
 
   try {
-    // Fetch student and class name
-    const student:any = await prisma.student.findUnique({
+    const student: any = await prisma.student.findUnique({
       where: { id: studentId },
-      select: {
+      include: {
         class: {
-          select: {
-            name: true,
+          include: {
+            section: {
+              include: {
+                fee: true,
+              },
+            },
           },
         },
       },
     });
 
     if (!student || !student.class) {
-      return res.status(404).json({ error: "Student or class not found" });
+      res.status(404).json({ error: "Student or class not found" });
+      return;
     }
-
-    const className = student.class.name.toLowerCase(); // Now safe to call toLowerCase
 
     let feeAmount = 0;
-    if (className.includes("nursery")) {
-      feeAmount = sectionFees.nursery;
-    } else if (className.includes("primary")) {
-      feeAmount = sectionFees.primary;
-    } else if (className.includes("secondary") || className.includes("ss")) {
-      feeAmount = sectionFees.secondary;
+    if (student.class.section.fee) {
+      feeAmount = student.class.section.fee.amount;
     } else {
-      return res
-        .status(400)
-        .json({ error: "Could not determine section from class name" });
+      const className = student.class.name.toLowerCase();
+      if (className.includes("nursery")) {
+        feeAmount = 30000;
+      } else if (className.includes("primary")) {
+        feeAmount = 35000;
+      } else if (className.includes("secondary") || className.includes("ss")) {
+        feeAmount = 42000;
+      } else {
+        res.status(400).json({ error: "Fee not set for this section. Please contact administrator." });
+        return;
+      }
     }
 
-    // Fetch all payments made by this student
     const payments = await prisma.payment.findMany({
-      where: { studentId },
+      where: { studentId, verified: true },
     });
 
-    const totalPaid = payments.reduce((sum:any, p:any) => sum + p.amountPaid, 0);
+    const totalPaid = payments.reduce((sum: number, p: any) => sum + p.amountPaid, 0);
 
     let status = "";
     if (totalPaid === 0) status = "Not Paid";
@@ -179,10 +177,12 @@ export const checkPaymentStatus = async (req: Request, res: Response) => {
 
     res.status(200).json({
       studentId,
-      class: className,
+      class: student.class.name,
+      section: student.class.section.name,
       totalPaid,
       feeAmount,
       status,
+      balance: feeAmount - totalPaid,
       payments,
     });
   } catch (error) {
@@ -198,7 +198,15 @@ export const getPaymentSummary = async (
   try {
     const students = await prisma.student.findMany({
       include: {
-        class: true,
+        class: {
+          include: {
+            section: {
+              include: {
+                fee: true,
+              },
+            },
+          },
+        },
         payments: true,
       },
     });
@@ -206,40 +214,63 @@ export const getPaymentSummary = async (
     const fullyPaid: any[] = [];
     const awaitingVerification: any[] = [];
     const notPaid: any[] = [];
+    const partiallyPaid: any[] = [];
 
     for (const student of students) {
-      const className = student.class.name.toLowerCase();
-
-      // Determine fee based on class name
+      // Determine expected fee
       let expectedFee = 0;
-      if (className.includes("nursery")) {
-        expectedFee = 30000;
-      } else if (className.includes("primary")) {
-        expectedFee = 35000;
-      } else if (className.includes("ss") || className.includes("secondary")) {
-        expectedFee = 42000;
+      if (student.class.section && student.class.section.fee) {
+        expectedFee = student.class.section.fee.amount;
+      } else {
+        // Fallback to default fees
+        const className = student.class.name.toLowerCase();
+        if (className.includes("nursery")) expectedFee = 30000;
+        else if (className.includes("primary")) expectedFee = 35000;
+        else if (className.includes("secondary") || className.includes("ss"))
+          expectedFee = 42000;
       }
 
-      const verifiedPayments = student.payments.filter((p:any) => p.verified);
+      const verifiedPayments = student.payments.filter((p: any) => p.verified);
       const totalVerified = verifiedPayments.reduce(
-        (sum:any, p:any) => sum + p.amountPaid,
+        (sum: any, p: any) => sum + p.amountPaid,
         0
       );
 
       if (student.payments.length === 0) {
-        notPaid.push(student);
-      } else if (verifiedPayments.length === 0) {
-        awaitingVerification.push(student);
+        notPaid.push({
+          ...student,
+          totalPaid: 0,
+          expectedFee,
+          balance: expectedFee,
+        });
+      } else if (student.payments.some((p: any) => !p.verified)) {
+        awaitingVerification.push({
+          ...student,
+          totalPaid: totalVerified,
+          expectedFee,
+          balance: expectedFee - totalVerified,
+        });
       } else if (totalVerified >= expectedFee) {
-        fullyPaid.push(student);
+        fullyPaid.push({
+          ...student,
+          totalPaid: totalVerified,
+          expectedFee,
+          balance: 0,
+        });
       } else {
-        awaitingVerification.push(student); // or you could create a new `partiallyPaid` array
+        partiallyPaid.push({
+          ...student,
+          totalPaid: totalVerified,
+          expectedFee,
+          balance: expectedFee - totalVerified,
+        });
       }
     }
 
     res.status(200).json({
       fullyPaid,
       awaitingVerification,
+      partiallyPaid,
       notPaid,
     });
   } catch (error) {
@@ -260,6 +291,13 @@ export const getPaymentHistoryByParentId = async (
     // Find all students belonging to the parent
     const students = await prisma.student.findMany({
       where: { parentId },
+      include: {
+        class: {
+          include: {
+            section: true,
+          },
+        },
+      },
     });
 
     if (!students || students.length === 0) {
@@ -267,25 +305,108 @@ export const getPaymentHistoryByParentId = async (
       return;
     }
 
-    const studentIds = students.map((student:any) => student.id);
+    const studentIds = students.map((student: any) => student.id);
 
     // Fetch all payments for those students
     const payments = await prisma.payment.findMany({
       where: { studentId: { in: studentIds } },
       orderBy: { createdAt: "desc" },
+      include: {
+        student: {
+          include: {
+            class: true,
+          },
+        },
+      },
     });
 
-    const response = payments.map((payment:any) => ({
-      date: payment.createdAt.toISOString().split("T")[0], // assuming createdAt field exists
+    const response = payments.map((payment: any) => ({
+      id: payment.id,
+      date: payment.createdAt.toISOString().split("T")[0],
       receiptUrl: payment.receiptUrl,
       amount: payment.amountPaid,
       verified: payment.verified,
+      rejectionReason: payment.rejectionReason,
       studentId: payment.studentId,
+      studentName: `${payment.student.name} ${payment.student.surname}`,
+      className: payment.student.class.name,
     }));
 
     res.json({ payments: response });
   } catch (error) {
     console.error("Error getting payment history:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Admin function to set section fees
+export const setSectionFee = async (req: Request, res: Response) => {
+  const { sectionId, amount } = req.body;
+
+  try {
+    const sectionFee = await prisma.sectionFee.upsert({
+      where: { sectionId: parseInt(sectionId) },
+      update: { amount },
+      create: {
+        sectionId: parseInt(sectionId),
+        amount,
+      },
+    });
+
+    res.status(200).json({
+      message: "Section fee updated successfully",
+      sectionFee,
+    });
+  } catch (error) {
+    console.error("Error setting section fee:", error);
+    res.status(500).json({ error: "Error setting section fee" });
+  }
+};
+
+// Get all section fees
+export const getSectionFees = async (req: Request, res: Response) => {
+  try {
+    const sectionFees = await prisma.sectionFee.findMany({
+      include: {
+        section: true,
+      },
+    });
+
+    res.status(200).json({ sectionFees });
+  } catch (error) {
+    console.error("Error getting section fees:", error);
+    res.status(500).json({ error: "Error getting section fees" });
+  }
+};
+
+// Get payments awaiting verification
+export const getPaymentsAwaitingVerification = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const payments = await prisma.payment.findMany({
+      where: { verified: false },
+      include: {
+        student: {
+          include: {
+            class: {
+              include: {
+                section: true,
+              },
+            },
+          },
+        },
+        parent: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.status(200).json({ payments });
+  } catch (error) {
+    console.error("Error getting payments awaiting verification:", error);
+    res
+      .status(500)
+      .json({ error: "Error getting payments awaiting verification" });
   }
 };
