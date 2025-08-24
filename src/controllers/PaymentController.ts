@@ -14,7 +14,11 @@ export const uploadReceipt = async (
   console.log("Request body:", req.body);
   console.log("Request file:", req.file);
   
-  const { studentId, parentId, amountPaid } = req.body;
+  // Handle field names with or without spaces
+  const studentId = req.body.studentId || req.body.studentId;
+  const parentId = req.body.parentId || req.body.parentId;
+  const amountPaid = req.body.amountPaid || req.body['amountPaid ']; // Handle both cases
+  
   const file = req.file;
 
   // Check if any field is missing
@@ -38,7 +42,11 @@ export const uploadReceipt = async (
 
   if (!amountPaid) {
     console.log("Missing amountPaid");
-    res.status(400).json({ error: "Missing amountPaid" });
+    console.log("Available fields:", Object.keys(req.body));
+    res.status(400).json({ 
+      error: "Missing amountPaid",
+      details: "Check if there's a space in the field name"
+    });
     return;
   }
 
@@ -81,7 +89,7 @@ export const uploadReceipt = async (
     res.status(200).json({
       message: "Receipt uploaded successfully, awaiting verification",
       payment,
-      receiptUrl, // Include the URL for reference
+      receiptUrl,
     });
   } catch (error) {
     console.error("Error uploading receipt:", error);
