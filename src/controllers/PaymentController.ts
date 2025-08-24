@@ -10,11 +10,35 @@ export const uploadReceipt = async (
   req: Request,
   res: Response
 ): Promise<void> => {
+  // Add debug logging to see what's coming in
+  console.log("Request body:", req.body);
+  console.log("Request file:", req.file);
+  
   const { studentId, parentId, amountPaid } = req.body;
   const file = req.file;
 
-  if (!file || !studentId || !parentId || !amountPaid) {
-    res.status(400).json({ error: "Missing required fields" });
+  // Check if any field is missing
+  if (!file) {
+    console.log("No file uploaded");
+    res.status(400).json({ error: "Please upload a receipt file" });
+    return;
+  }
+
+  if (!studentId) {
+    console.log("Missing studentId");
+    res.status(400).json({ error: "Missing studentId" });
+    return;
+  }
+
+  if (!parentId) {
+    console.log("Missing parentId");
+    res.status(400).json({ error: "Missing parentId" });
+    return;
+  }
+
+  if (!amountPaid) {
+    console.log("Missing amountPaid");
+    res.status(400).json({ error: "Missing amountPaid" });
     return;
   }
 
@@ -24,37 +48,30 @@ export const uploadReceipt = async (
     "image/jpg",
     "application/pdf",
   ];
+  
   if (!allowedMimeTypes.includes(file.mimetype)) {
-    res
-      .status(400)
-      .json({ error: "Only JPEG, PNG images and PDF files are allowed" });
+    res.status(400).json({ error: "Only JPEG, PNG images and PDF files are allowed" });
+    
+    // Clean up the uploaded file
+    try {
+      if (file.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+    } catch (cleanupError) {
+      console.error("File cleanup error:", cleanupError);
+    }
+    
     return;
   }
 
   try {
-    // Store the receipt file in a dedicated uploads directory
-    const uploadsDir = path.join(process.cwd(), "uploads", "receipts");
-
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    // Generate a unique filename
-    const uniqueFilename = `${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(7)}-${file.originalname}`;
-    const filePath = path.join(uploadsDir, uniqueFilename);
-
-    // Move the file to the uploads directory
-    fs.renameSync(file.path, filePath);
-
-    const receiptUrl = `/uploads/receipts/${uniqueFilename}`;
+    // File is already saved by multer, just use the existing path
+    const receiptUrl = `../uploads/receipts/${file.filename}`;
 
     const payment = await prisma.payment.create({
       data: {
-        studentId,
-        parentId,
+        studentId: studentId.trim(),
+        parentId: parentId.trim(),
         amountPaid: parseFloat(amountPaid),
         receiptUrl,
         verified: false,
@@ -64,13 +81,14 @@ export const uploadReceipt = async (
     res.status(200).json({
       message: "Receipt uploaded successfully, awaiting verification",
       payment,
+      receiptUrl, // Include the URL for reference
     });
   } catch (error) {
     console.error("Error uploading receipt:", error);
 
-    // Clean up the temporary file if there was an error
+    // Clean up the uploaded file if there was an error
     try {
-      if (file && file.path) {
+      if (file && file.path && fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
       }
     } catch (cleanupError) {
