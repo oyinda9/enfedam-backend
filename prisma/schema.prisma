@@ -78,14 +78,13 @@ model Parent {
   payments  Payment[]
   students  Student[]
 }
-model Section {
-  id      Int      @id @default(autoincrement())
-  name    String   @unique
-  classes Class[]
-  fee     SectionFee? 
-  
-}
 
+model Section {
+  id      Int         @id @default(autoincrement())
+  name    String      @unique
+  classes Class[]
+  fee     SectionFee?
+}
 
 model Class {
   id            Int            @id @default(autoincrement())
@@ -98,17 +97,15 @@ model Class {
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   lessons       Lesson[]
   students      Student[]
-  subjects      Subject[]
+  subjects      Subject[]      @relation("ClassSubjects")
 }
-
 model Subject {
   id       Int       @id @default(autoincrement())
   name     String    @unique
-  classId  Int
+  classes  Class[]   @relation("ClassSubjects")
   exams    Exam[]
   lessons  Lesson[]
   Result   Result[]
-  class    Class     @relation(fields: [classId], references: [id])
   Student  Student[] @relation("StudentSubjects")
   teachers Teacher[] @relation("SubjectToTeacher")
 }
@@ -208,6 +205,7 @@ model SectionFee {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 enum UserSex {
   MALE
   FEMALE

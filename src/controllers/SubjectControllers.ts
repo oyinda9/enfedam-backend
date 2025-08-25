@@ -1,77 +1,69 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+
 const prisma = new PrismaClient();
 
-export const createSubject = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+/**
+ * Create a Subject and link it to one or more Classes
+ */
+export const createSubject = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, classId } = req.body;
+    const { name, classIds } = req.body; // classIds = array of class IDs to connect
 
-    // Check if the class exists
-    const existingClass = await prisma.class.findUnique({
-      where: { id: classId },
-    });
-
-    if (!existingClass) {
-      res.status(404).json({ message: 'Class not found. Please provide a valid class.' });
+    if (!name || !Array.isArray(classIds) || classIds.length === 0) {
+      res.status(400).json({ message: 'Name and at least one classId are required.' });
       return;
     }
 
-    // Create the subject
+    // Check if all classes exist
+    const existingClasses = await prisma.class.findMany({
+      where: { id: { in: classIds } },
+    });
+
+    if (existingClasses.length !== classIds.length) {
+      res.status(404).json({ message: 'One or more classes not found.' });
+      return;
+    }
+
+    // Create the subject and connect to classes
     const createdSubject = await prisma.subject.create({
       data: {
         name,
-        classId,
-      },
-    });
-
-    // Fetch the subject again including the class relation
-    const subjectWithClass = await prisma.subject.findUnique({
-      where: { id: createdSubject.id },
-      include: {
-        class: {
-          select: {
-            id: true,
-            name: true, // Include class name
-          },
+        classes: {
+          connect: classIds.map((id: number) => ({ id })),
         },
+      },
+      include: {
+        classes: { select: { id: true, name: true } },
       },
     });
 
     res.status(201).json({
       message: 'Subject created successfully.',
-      data: subjectWithClass,
+      data: createdSubject,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating subject:', error);
-    if (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as any).code === 'P2002'
-    ) {
-      res.status(409).json({ message: 'Subject with this name already exists in the class.' });
+
+    if (error.code === 'P2002') {
+      res.status(409).json({ message: 'Subject with this name already exists.' });
     } else {
-      res.status(500).json({ message: 'An unexpected error occurred while creating the subject.' });
+      res.status(500).json({ message: 'Unexpected error creating subject.' });
     }
   }
 };
 
+/**
+ * Get all Subjects with their Classes, Teachers, Lessons, Exams
+ */
 export const getAllSubjects = async (_req: Request, res: Response) => {
   try {
     const subjects = await prisma.subject.findMany({
       include: {
-        teachers: true,
+        classes: { select: { id: true, name: true } },
+        teachers: { select: { id: true, name: true } },
         lessons: true,
         exams: true,
-        class: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
       },
     });
 
@@ -81,8 +73,6 @@ export const getAllSubjects = async (_req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching subjects:', error);
-    res.status(500).json({
-      message: 'An error occurred while fetching subjects.',
-    });
+    res.status(500).json({ message: 'Unexpected error fetching subjects.' });
   }
 };
