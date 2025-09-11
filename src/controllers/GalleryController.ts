@@ -2,12 +2,19 @@ import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
 const prisma = new PrismaClient();
 
+// Ensure system_images folder exists
+const folderPath = path.join(__dirname, "../system_images");
+if (!fs.existsSync(folderPath)) {
+  fs.mkdirSync(folderPath, { recursive: true });
+}
+
 // Configure multer storage
 const storage = multer.diskStorage({
-  destination: "system_images/", // new folder for images
+  destination: folderPath,
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + "-" + file.originalname;
     cb(null, uniqueName);
@@ -26,9 +33,7 @@ export const uploadImage = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    // const fileUrl = `${req.protocol}://${req.get("host")}/system_images/${req.file.filename}`;
-    const fileUrl = `https://enfedam-backend.onrender.com/system_images/${req.file.filename}`;
-
+    const fileUrl = `${req.protocol}://${req.get("host")}/system_images/${req.file.filename}`;
 
     const image = await prisma.galleryImage.create({
       data: {
@@ -68,8 +73,7 @@ export const deleteImage = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const fs = await import("fs");
-    const filePath = path.join(__dirname, "../system_images", image.filename);
+    const filePath = path.join(folderPath, image.filename);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     await prisma.galleryImage.delete({ where: { id: Number(id) } });
