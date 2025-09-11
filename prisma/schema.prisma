@@ -92,20 +92,21 @@ model Class {
   capacity      Int
   supervisorId  String?
   sectionId     Int?
-  section       Section?       @relation(fields: [sectionId], references: [id])
   announcements Announcement[]
+  section       Section?       @relation(fields: [sectionId], references: [id])
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   lessons       Lesson[]
   students      Student[]
   subjects      Subject[]      @relation("ClassSubjects")
 }
+
 model Subject {
   id       Int       @id @default(autoincrement())
   name     String    @unique
-  classes  Class[]   @relation("ClassSubjects")
   exams    Exam[]
   lessons  Lesson[]
   Result   Result[]
+  classes  Class[]   @relation("ClassSubjects")
   Student  Student[] @relation("StudentSubjects")
   teachers Teacher[] @relation("SubjectToTeacher")
 }
@@ -190,20 +191,26 @@ model Payment {
   parentId        String
   amountPaid      Float
   receiptUrl      String
-  rejectionReason String?
   verified        Boolean  @default(false)
   createdAt       DateTime @default(now())
+  rejectionReason String?
   parent          Parent   @relation(fields: [parentId], references: [id])
   student         Student  @relation(fields: [studentId], references: [id])
 }
 
 model SectionFee {
-  id        Int      @id @default(autoincrement())
   sectionId Int      @unique
   amount    Float
-  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+}
+model GalleryImage {
+  id         Int      @id @default(autoincrement())
+  url        String
+  filename   String
+  uploadedAt DateTime @default(now())
 }
 
 enum UserSex {
@@ -213,10 +220,10 @@ enum UserSex {
 
 enum Role {
   ADMIN
-  EXECUTIVE
   TEACHER
   STUDENT
   USER
+  EXECUTIVE
 }
 
 enum Day {
