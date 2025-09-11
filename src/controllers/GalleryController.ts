@@ -26,7 +26,9 @@ export const uploadImage = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const fileUrl = `${req.protocol}://${req.get("host")}/system_images/${req.file.filename}`;
+    // const fileUrl = `${req.protocol}://${req.get("host")}/system_images/${req.file.filename}`;
+    const fileUrl = `https://enfedam-backend.onrender.com/system_images/${req.file.filename}`;
+
 
     const image = await prisma.galleryImage.create({
       data: {
