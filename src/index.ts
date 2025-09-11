@@ -43,6 +43,7 @@ app.use("/report", reportRoute);
 app.use("/sections", SectionRoutes);
 app.use("/gallery", GalleryRoute);
 app.use("/auth", AuthRoutes);
+app.use("/system_images", express.static(path.join(__dirname, "../system_images")));
 
 // Health check endpoint
 app.get("/", (req: Request, res: Response) => {
