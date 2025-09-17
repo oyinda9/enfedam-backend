@@ -158,7 +158,7 @@ model Result {
   examScore    Int?
   totalScore   Float?
   exam         Exam?   @relation(fields: [examId], references: [id])
-  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject      Subject @relation(fields: [subjectId], references: [id])
 }
 
