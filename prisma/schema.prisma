@@ -43,7 +43,7 @@ model Student {
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   // parent      Parent?      @relation(fields: [parentId], references: [id])
-  parent   Parent?  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parent      Parent?      @relation(fields: [parentId], references: [id], onDelete: Cascade)
   Subject     Subject[]    @relation("StudentSubjects")
 }
 
@@ -195,8 +195,8 @@ model Payment {
   verified        Boolean  @default(false)
   createdAt       DateTime @default(now())
   rejectionReason String?
-  parent          Parent   @relation(fields: [parentId], references: [id])
-  student         Student  @relation(fields: [studentId], references: [id])
+  parent          Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id])
 }
 
 model SectionFee {
@@ -207,6 +207,7 @@ model SectionFee {
   id        Int      @id @default(autoincrement())
   section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 }
+
 model GalleryImage {
   id         Int      @id @default(autoincrement())
   url        String
