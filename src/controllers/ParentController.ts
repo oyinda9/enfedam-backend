@@ -82,18 +82,26 @@ export const updateParent = async (req: Request, res: Response) => {
   }
 };
 
-export const deleteParent = async (req: Request, res: Response) => {
+export const deleteParent = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const { id } = req.params;
 
   try {
-    await prisma.parent.delete({
-      where: { id },
-    });
-
-    res.status(200).json({ message: "Parent deleted successfully" });
+    await prisma.parent.delete({ where: { id } });
+    res.status(200).json({ message: "Parent and students deleted successfully" });
+    return;
   } catch (error: any) {
+    if (error.code === "P2025") {
+      res.status(404).json({ error: "Parent not found" });
+      return;
+    }
     res
       .status(400)
       .json({ error: "Failed to delete parent", details: error.message });
   }
 };
+
+                     
+
