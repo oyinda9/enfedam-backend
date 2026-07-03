@@ -17,12 +17,22 @@ class ClassController {
     static createClass(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const { name, capacity, supervisorId } = req.body;
+                const { name, capacity, supervisorId, sectionId } = req.body;
                 if (!name || !capacity) {
                     res.status(400).json({ error: "Name and capacity are required" });
                     return;
                 }
-                let supervisorData = {};
+                // ✅ Validate Section
+                if (sectionId) {
+                    const sectionExists = yield prisma.section.findUnique({
+                        where: { id: sectionId },
+                    });
+                    if (!sectionExists) {
+                        res.status(400).json({ error: "Section not found" });
+                        return;
+                    }
+                }
+                // ✅ Validate Supervisor
                 if (supervisorId) {
                     const supervisorExists = yield prisma.teacher.findUnique({
                         where: { id: supervisorId },
@@ -31,17 +41,27 @@ class ClassController {
                         res.status(400).json({ error: "Supervisor not found" });
                         return;
                     }
-                    supervisorData = { supervisor: { connect: { id: supervisorId } } };
                 }
                 const newClass = yield prisma.class.create({
-                    data: Object.assign({ name,
-                        capacity }, supervisorData), // Ensuring correct Prisma type
+                    data: {
+                        name,
+                        capacity,
+                        supervisorId, // ✅ directly set FK
+                        sectionId, // ✅ directly set FK
+                    },
+                    include: {
+                        section: true,
+                        supervisor: true,
+                    },
                 });
                 res.status(201).json({ message: "Class created successfully", newClass });
             }
             catch (error) {
                 console.error("Error creating class:", error);
-                res.status(500).json({ error: "Error creating class", details: error instanceof Error ? error.message : "Unknown error" });
+                res.status(500).json({
+                    error: "Error creating class",
+                    details: error instanceof Error ? error.message : "Unknown error",
+                });
             }
         });
     }
@@ -51,17 +71,22 @@ class ClassController {
             try {
                 const classes = yield prisma.class.findMany({
                     include: {
+                        section: true,
                         supervisor: true,
                         students: true,
                         announcements: true,
                         lessons: true,
+                        subjects: true,
                     },
                 });
                 res.status(200).json(classes);
             }
             catch (error) {
                 console.error("Error fetching classes:", error);
-                res.status(500).json({ error: "Error fetching classes", details: error instanceof Error ? error.message : "Unknown error" });
+                res.status(500).json({
+                    error: "Error fetching classes",
+                    details: error instanceof Error ? error.message : "Unknown error",
+                });
             }
         });
     }
@@ -73,10 +98,12 @@ class ClassController {
                 const classData = yield prisma.class.findUnique({
                     where: { id: parseInt(id) },
                     include: {
+                        section: true,
                         supervisor: true,
                         students: true,
                         announcements: true,
                         lessons: true,
+                        subjects: true,
                     },
                 });
                 if (!classData) {
@@ -87,7 +114,10 @@ class ClassController {
             }
             catch (error) {
                 console.error("Error fetching class:", error);
-                res.status(500).json({ error: "Error fetching class", details: error instanceof Error ? error.message : "Unknown error" });
+                res.status(500).json({
+                    error: "Error fetching class",
+                    details: error instanceof Error ? error.message : "Unknown error",
+                });
             }
         });
     }
@@ -96,8 +126,18 @@ class ClassController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { id } = req.params;
-                const { name, capacity, supervisorId } = req.body;
-                let supervisorData = {};
+                const { name, capacity, supervisorId, sectionId } = req.body;
+                // Validate Section
+                if (sectionId) {
+                    const sectionExists = yield prisma.section.findUnique({
+                        where: { id: sectionId },
+                    });
+                    if (!sectionExists) {
+                        res.status(400).json({ error: "Section not found" });
+                        return;
+                    }
+                }
+                // Validate Supervisor
                 if (supervisorId) {
                     const supervisorExists = yield prisma.teacher.findUnique({
                         where: { id: supervisorId },
@@ -106,18 +146,31 @@ class ClassController {
                         res.status(400).json({ error: "Supervisor not found" });
                         return;
                     }
-                    supervisorData = { supervisor: { connect: { id: supervisorId } } };
                 }
                 const updatedClass = yield prisma.class.update({
                     where: { id: parseInt(id) },
-                    data: Object.assign({ name,
-                        capacity }, supervisorData),
+                    data: {
+                        name,
+                        capacity,
+                        supervisorId,
+                        sectionId,
+                    },
+                    include: {
+                        section: true,
+                        supervisor: true,
+                    },
                 });
-                res.status(200).json({ message: "Class updated successfully", updatedClass });
+                res.status(200).json({
+                    message: "Class updated successfully",
+                    updatedClass,
+                });
             }
             catch (error) {
                 console.error("Error updating class:", error);
-                res.status(500).json({ error: "Error updating class", details: error instanceof Error ? error.message : "Unknown error" });
+                res.status(500).json({
+                    error: "Error updating class",
+                    details: error instanceof Error ? error.message : "Unknown error",
+                });
             }
         });
     }
@@ -133,7 +186,10 @@ class ClassController {
             }
             catch (error) {
                 console.error("Error deleting class:", error);
-                res.status(500).json({ error: "Error deleting class", details: error instanceof Error ? error.message : "Unknown error" });
+                res.status(500).json({
+                    error: "Error deleting class",
+                    details: error instanceof Error ? error.message : "Unknown error",
+                });
             }
         });
     }

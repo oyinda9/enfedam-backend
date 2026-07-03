@@ -4,10 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const AttendController_1 = require("../controllers/AttendController");
+const GalleryController_1 = require("../controllers/GalleryController");
 const router = express_1.default.Router();
-router.post('/', AttendController_1.createAttendance);
-router.get('/', AttendController_1.getAllAttendance);
-router.get('/class', AttendController_1.getAllAttendanceByClass);
-router.get('/stat', AttendController_1.getAllAttendanceByClassStats);
+router.post("/upload", GalleryController_1.upload, GalleryController_1.uploadImage);
+router.get("/gallery", GalleryController_1.getGallery);
+router.delete("/gallery/:id", GalleryController_1.deleteImage);
 exports.default = router;

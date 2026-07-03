@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authorizesStudentCreation = exports.authorizeTeacherCreation = exports.authorizeParentCreation = exports.authorizeAdmin = exports.authenticateAdmin = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const client_1 = require("@prisma/client"); // Import the Role enum from Prisma
+const client_1 = require("@prisma/client");
 dotenv_1.default.config();
 const SECRET_KEY = process.env.JWT_SECRET;
 if (!SECRET_KEY) {

@@ -4,10 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const AttendController_1 = require("../controllers/AttendController");
+const authController_1 = require("../controllers/authController");
 const router = express_1.default.Router();
-router.post('/', AttendController_1.createAttendance);
-router.get('/', AttendController_1.getAllAttendance);
-router.get('/class', AttendController_1.getAllAttendanceByClass);
-router.get('/stat', AttendController_1.getAllAttendanceByClassStats);
+// Define routes
+router.post("/register", authController_1.registerAdmin);
+router.post("/register/executive", authController_1.registerExecutive); // <-- changed this line
+router.post("/login", authController_1.login);
+// router.post("/loginUser", loginUser);
 exports.default = router;
