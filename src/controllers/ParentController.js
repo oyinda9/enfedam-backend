@@ -89,19 +89,15 @@ exports.updateParent = updateParent;
 const deleteParent = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     try {
-        yield prisma.$transaction([
-            prisma.payment.deleteMany({ where: { parentId: id } }),
-            prisma.student.deleteMany({ where: { parentId: id } }),
-            prisma.parent.delete({ where: { id } }),
-        ]);
-        res.status(200).json({ message: "Parent, students, and payments deleted successfully" });
+        yield prisma.parent.delete({
+            where: { id },
+        });
+        res.status(200).json({ message: "Parent deleted successfully" });
     }
     catch (error) {
-        if (error.code === "P2025") {
-            res.status(404).json({ error: "Parent not found" });
-            return;
-        }
-        res.status(400).json({ error: "Failed to delete parent", details: error.message });
+        res
+            .status(400)
+            .json({ error: "Failed to delete parent", details: error.message });
     }
 });
 exports.deleteParent = deleteParent;
