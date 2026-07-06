@@ -4,3 +4,7 @@ node_modules
 
 .vercel
 .env*.local
+
+# Compiled TypeScript output
+dist
+src/**/*.js
