@@ -168,6 +168,42 @@ export class ClassController {
     }
   }
 
+  // ✅ Get classes summary (id, name, section, studentCount, classTeacherId)
+  static async getClassesSummary(req: Request, res: Response): Promise<void> {
+    try {
+      const { limit, skip } = req.query;
+
+      const [classes, total] = await Promise.all([
+        prisma.class.findMany({
+          include: {
+            section: { select: { id: true, name: true } },
+            _count: { select: { students: true } },
+          },
+          take: limit ? Number(limit) : 100,
+          skip: skip ? Number(skip) : 0,
+        }),
+        prisma.class.count(),
+      ]);
+
+      const data = classes.map((c) => ({
+        id: c.id,
+        name: c.name,
+        section: c.section,
+        studentCount: c._count.students,
+        classTeacherId: c.supervisorId,
+      }));
+
+      res.status(200).json({ success: true, data, count: data.length, total });
+    } catch (error) {
+      console.error("Error fetching classes summary:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching classes summary",
+        code: "SERVER_ERROR",
+      });
+    }
+  }
+
   // ✅ Delete a class
   static async deleteClass(req: Request, res: Response): Promise<void> {
     try {

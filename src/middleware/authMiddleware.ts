@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import {  Role } from '@prisma/client'
+import { Role, PrismaClient } from '@prisma/client'
 
 dotenv.config();
 const SECRET_KEY = process.env.JWT_SECRET;
+const prisma = new PrismaClient();
 
 if (!SECRET_KEY) {
   throw new Error("JWT_SECRET environment variable is not set");
@@ -120,4 +121,61 @@ export const authorizesStudentCreation = (
 
   // If not a parent (they may be an admin or other authorized role), proceed
   next();
+};
+
+// Generic JWT-verify middleware, aliased for readability in new route files
+export const authenticate = authenticateAdmin;
+
+// Middleware factory: allow only the listed roles
+export const requireRole = (...roles: Role[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      res.status(403).json({
+        success: false,
+        message: "Forbidden. You do not have permission to perform this action.",
+        code: "FORBIDDEN",
+      });
+      return;
+    }
+    next();
+  };
+};
+
+// Middleware factory: allow the listed staff roles, OR the student themself,
+// OR a parent whose own child matches req.params.studentId
+export const requireSelfOrRoles = (...roles: Role[]) => {
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Access denied. No token provided.", code: "UNAUTHORIZED" });
+      return;
+    }
+
+    if (roles.includes(req.user.role)) {
+      next();
+      return;
+    }
+
+    const { studentId } = req.params;
+
+    if (req.user.role === Role.STUDENT) {
+      if (req.user.id === studentId) {
+        next();
+        return;
+      }
+      res.status(403).json({ success: false, message: "Forbidden. You may only access your own records.", code: "FORBIDDEN" });
+      return;
+    }
+
+    if (req.user.role === Role.USER) {
+      const student = await prisma.student.findUnique({ where: { id: studentId }, select: { parentId: true } });
+      if (student?.parentId === req.user.id) {
+        next();
+        return;
+      }
+      res.status(403).json({ success: false, message: "Forbidden. You may only access your own child's records.", code: "FORBIDDEN" });
+      return;
+    }
+
+    res.status(403).json({ success: false, message: "Forbidden. You do not have permission to perform this action.", code: "FORBIDDEN" });
+  };
 };

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { PrismaClient, Role } from "@prisma/client";
 
 import dotenv from "dotenv";
@@ -8,6 +9,23 @@ import dotenv from "dotenv";
 dotenv.config();
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "your_secret_key";
+
+const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
+
+const issueRefreshToken = async (userId: string, role: Role) => {
+  const refreshToken = crypto.randomBytes(32).toString("hex");
+  await prisma.refreshToken.create({
+    data: {
+      tokenHash: hashToken(refreshToken),
+      userId,
+      role,
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    },
+  });
+  return refreshToken;
+};
 
 // Register Admin
 export const registerAdmin = async (
@@ -342,11 +360,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       { expiresIn: "1d" }
     );
 
+    const refreshToken = await issueRefreshToken(user.id, role);
+
     res.setHeader("Authorization", `Bearer ${token}`);
 
     res.status(200).json({
       message: "Login successful",
       token,
+      refreshToken,
       role,
       user: {
         id: user.id,
@@ -361,5 +382,46 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     console.error("Login Error:", error);
     res.status(500).json({ error: "Login failed" });
+  }
+};
+
+// Exchange a refresh token for a new access token + refresh token (rotation)
+export const refreshAccessToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      res.status(400).json({ success: false, message: "refreshToken is required", code: "VALIDATION_ERROR" });
+      return;
+    }
+
+    const tokenHash = hashToken(refreshToken);
+    const stored = await prisma.refreshToken.findUnique({ where: { tokenHash } });
+
+    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+      res.status(401).json({ success: false, message: "Invalid or expired refresh token", code: "UNAUTHORIZED" });
+      return;
+    }
+
+    await prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date() },
+    });
+
+    const newToken = jwt.sign(
+      { id: stored.userId, role: stored.role },
+      process.env.JWT_SECRET || "secret",
+      { expiresIn: "1d" }
+    );
+    const newRefreshToken = await issueRefreshToken(stored.userId, stored.role);
+
+    res.status(200).json({
+      success: true,
+      token: newToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    console.error("Refresh Token Error:", error);
+    res.status(500).json({ success: false, message: "Failed to refresh token", code: "SERVER_ERROR" });
   }
 };

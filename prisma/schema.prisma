@@ -45,6 +45,10 @@ model Student {
   // parent      Parent?      @relation(fields: [parentId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id], onDelete: Cascade)
   Subject     Subject[]    @relation("StudentSubjects")
+  transcripts     Transcript[]
+  testimonials    Testimonial[]
+  conductRecords  ConductRecord[]
+  achievements    Achievement[]
 }
 
 model Teacher {
@@ -64,6 +68,7 @@ model Teacher {
   classes   Class[]
   lessons   Lesson[]
   subjects  Subject[] @relation("SubjectToTeacher")
+  testimonials Testimonial[]
 }
 
 model Parent {
@@ -110,6 +115,84 @@ model Subject {
   classes  Class[]   @relation("ClassSubjects")
   Student  Student[] @relation("StudentSubjects")
   teachers Teacher[] @relation("SubjectToTeacher")
+}
+
+model Transcript {
+  id               Int                 @id @default(autoincrement())
+  studentId        String
+  session          String // e.g. "2023/2024"
+  className        String // snapshot of the class at the time, e.g. "SS2"
+  averageScore      Float
+  classPosition    String? // e.g. "3rd of 75"
+  promotionStatus  String? // e.g. "Promoted"
+  teacherRemark    String?
+  principalRemark  String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  student          Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjects         TranscriptSubject[]
+}
+
+model TranscriptSubject {
+  id           Int        @id @default(autoincrement())
+  transcriptId Int
+  subjectName  String
+  caScore      Int
+  examScore    Int
+  totalScore   Int
+  grade        String // WAEC-style: A1, B2, B3, C4, C5, C6, D7, E8, F9
+  transcript   Transcript @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+}
+
+model Testimonial {
+  id               Int      @id @default(autoincrement())
+  studentId        String
+  teacherId        String?
+  subject          String
+  content          String
+  rating           Int
+  isRecommendation Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  student          Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  teacher          Teacher? @relation(fields: [teacherId], references: [id])
+}
+
+model ConductRecord {
+  id          Int      @id @default(autoincrement())
+  studentId   String
+  type        String
+  title       String
+  description String
+  recordedBy  String
+  date        DateTime
+  severity    String
+  action      String
+  createdAt   DateTime @default(now())
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id             Int      @id @default(autoincrement())
+  studentId      String
+  type           String
+  title          String
+  description    String
+  issuer         String
+  date           DateTime
+  certificateUrl String?
+  createdAt      DateTime @default(now())
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  role      Role
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
 }
 
 model Lesson {

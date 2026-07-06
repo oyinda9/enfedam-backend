@@ -2,7 +2,55 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { RecordType } from '../shared/index';
+import { AuthRequest } from "../middleware/authMiddleware";
 const prisma = new PrismaClient();
+
+export const getStudentAttendance = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { studentId } = req.params;
+    const { month, year, limit } = req.query;
+
+    const records = await prisma.attendance.findMany({
+      where: {
+        studentId,
+        ...((month || year) ? {
+          date: {
+            ...(year ? { gte: new Date(Number(year), month ? Number(month) - 1 : 0, 1) } : {}),
+            ...(year ? { lt: month ? new Date(Number(year), Number(month), 1) : new Date(Number(year) + 1, 0, 1) } : {}),
+          },
+        } : {}),
+      },
+      orderBy: { date: "desc" },
+      take: limit ? Number(limit) : 100,
+    });
+
+    const totalDays = records.length;
+    const presentDays = records.filter((r) => r.present).length;
+    const absentDays = totalDays - presentDays;
+
+    res.status(200).json({
+      success: true,
+      data: records.map((r) => ({
+        id: r.id,
+        studentId: r.studentId,
+        date: r.date,
+        status: r.present ? "Present" : "Absent",
+        markedBy: null,
+        remarks: null,
+        createdAt: r.date,
+      })),
+      stats: {
+        totalDays,
+        presentDays,
+        absentDays,
+        attendancePercentage: totalDays > 0 ? Number(((presentDays / totalDays) * 100).toFixed(2)) : 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching student attendance:", error);
+    res.status(500).json({ success: false, message: "Unexpected error fetching attendance records.", code: "SERVER_ERROR" });
+  }
+};
 
 export const createAttendance = async (
   req: Request,

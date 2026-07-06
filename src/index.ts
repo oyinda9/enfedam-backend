@@ -20,6 +20,7 @@ import PaymentRoute from "./routes/PaymentRoute";
 import reportRoute from "./routes/reportRoute";
 import SectionRoutes from "./routes/SectionRoute";
 import GalleryRoute from "./routes/GalleryRoute"
+import ClassesSummaryRoute from "./routes/ClassesSummaryRoute"
 const prisma = new PrismaClient();
 const app = express();
 const port = 5000;
@@ -43,6 +44,7 @@ app.use("/report", reportRoute);
 app.use("/sections", SectionRoutes);
 app.use("/gallery", GalleryRoute);
 app.use("/auth", AuthRoutes);
+app.use("/classes", ClassesSummaryRoute);
 app.use("/system_images", express.static(path.join(__dirname, "../system_images")));
 
 // Health check endpoint
