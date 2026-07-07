@@ -15,7 +15,7 @@ import {
   requireRole,
   requireSelfOrRoles,
 } from "../middleware/authMiddleware";
-import { getStudentTranscripts, createTranscript, getStudentFullAcademicRecord } from "../controllers/TranscriptController";
+import { getStudentTranscripts, createTranscript, getStudentFullAcademicRecord, updateTranscript, deleteTranscript } from "../controllers/TranscriptController";
 import { getStudentTestimonials, createTestimonial } from "../controllers/TestimonialController";
 import { getStudentConduct, createConductRecord } from "../controllers/ConductController";
 import { getStudentAchievements, createAchievement } from "../controllers/AchievementController";
@@ -43,6 +43,8 @@ const readAccess = requireSelfOrRoles(Role.ADMIN, Role.TEACHER);
 router.get("/:studentId/transcripts", authenticate, readAccess, getStudentTranscripts);
 router.get("/:studentId/transcripts/full", authenticate, readAccess, getStudentFullAcademicRecord);
 router.post("/:studentId/transcripts", authenticate, staffOnly, createTranscript);
+router.put("/:studentId/transcripts/:transcriptId", authenticate, staffOnly, updateTranscript);
+router.delete("/:studentId/transcripts/:transcriptId", authenticate, staffOnly, deleteTranscript);
 
 router.get("/:studentId/testimonials", authenticate, readAccess, getStudentTestimonials);
 router.post("/:studentId/testimonials", authenticate, staffOnly, createTestimonial);

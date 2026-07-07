@@ -228,3 +228,95 @@ export const createTranscript = async (req: AuthRequest, res: Response): Promise
     res.status(500).json({ success: false, message: "Unexpected error creating transcript.", code: "SERVER_ERROR" });
   }
 };
+
+export const updateTranscript = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { studentId, transcriptId } = req.params;
+    const { className, subjects, classPosition, promotionStatus, teacherRemark, principalRemark } = req.body;
+
+    const existing = await prisma.transcript.findUnique({ where: { id: Number(transcriptId) } });
+    if (!existing || existing.studentId !== studentId) {
+      res.status(404).json({ success: false, message: "Transcript not found.", code: "NOT_FOUND" });
+      return;
+    }
+
+    let averageScoreUpdate: number | undefined;
+    if (subjects !== undefined) {
+      if (!Array.isArray(subjects) || subjects.length === 0) {
+        res.status(400).json({ success: false, message: "subjects must be a non-empty array when provided.", code: "VALIDATION_ERROR" });
+        return;
+      }
+      for (const s of subjects) {
+        if (!s.subjectName || s.caScore == null || s.examScore == null) {
+          res.status(400).json({ success: false, message: "Each subject requires subjectName, caScore and examScore.", code: "VALIDATION_ERROR" });
+          return;
+        }
+      }
+      const subjectRows = subjects.map((s: any) => {
+        const totalScore = s.caScore + s.examScore;
+        return { subjectName: s.subjectName, caScore: s.caScore, examScore: s.examScore, totalScore, grade: calculateGrade(totalScore) };
+      });
+      averageScoreUpdate = subjectRows.reduce((sum: number, s: any) => sum + s.totalScore, 0) / subjectRows.length;
+
+      await prisma.transcriptSubject.deleteMany({ where: { transcriptId: existing.id } });
+      await prisma.transcriptSubject.createMany({ data: subjectRows.map((s: any) => ({ ...s, transcriptId: existing.id })) });
+    }
+
+    const transcript = await prisma.transcript.update({
+      where: { id: existing.id },
+      data: {
+        ...(className !== undefined ? { className } : {}),
+        ...(classPosition !== undefined ? { classPosition } : {}),
+        ...(promotionStatus !== undefined ? { promotionStatus } : {}),
+        ...(teacherRemark !== undefined ? { teacherRemark } : {}),
+        ...(principalRemark !== undefined ? { principalRemark } : {}),
+        ...(averageScoreUpdate !== undefined ? { averageScore: averageScoreUpdate } : {}),
+      },
+      include: { subjects: true },
+    });
+
+    res.status(200).json({ success: true, message: "Transcript updated successfully", data: transcript });
+  } catch (error) {
+    console.error("Error updating transcript:", error);
+    res.status(500).json({ success: false, message: "Unexpected error updating transcript.", code: "SERVER_ERROR" });
+  }
+};
+
+export const deleteTranscript = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { studentId, transcriptId } = req.params;
+
+    const existing = await prisma.transcript.findUnique({ where: { id: Number(transcriptId) } });
+    if (!existing || existing.studentId !== studentId) {
+      res.status(404).json({ success: false, message: "Transcript not found.", code: "NOT_FOUND" });
+      return;
+    }
+
+    // Preserve First -> Second -> Third order: block deleting a term while a later one still exists.
+    if (existing.term) {
+      const termIndex = VALID_TERMS.indexOf(existing.term);
+      const laterTerms = VALID_TERMS.slice(termIndex + 1);
+      if (laterTerms.length) {
+        const laterExists = await prisma.transcript.findFirst({
+          where: { studentId, session: existing.session, term: { in: laterTerms } },
+          select: { term: true },
+        });
+        if (laterExists) {
+          res.status(400).json({
+            success: false,
+            message: `Delete ${laterExists.term} term for session ${existing.session} before deleting ${existing.term} term.`,
+            code: "VALIDATION_ERROR",
+          });
+          return;
+        }
+      }
+    }
+
+    await prisma.transcript.delete({ where: { id: existing.id } });
+
+    res.status(200).json({ success: true, message: "Transcript deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting transcript:", error);
+    res.status(500).json({ success: false, message: "Unexpected error deleting transcript.", code: "SERVER_ERROR" });
+  }
+};
