@@ -69,6 +69,39 @@ export const getStudentTranscripts = async (req: AuthRequest, res: Response): Pr
   }
 };
 
+export const getStudentFullAcademicRecord = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { studentId } = req.params;
+
+    const transcripts = await prisma.transcript.findMany({
+      where: { studentId },
+      include: { subjects: true },
+      orderBy: [{ session: "desc" }, { term: "asc" }],
+    });
+
+    const bySession = new Map<string, any[]>();
+    for (const t of transcripts) {
+      const list = bySession.get(t.session) ?? [];
+      list.push(t);
+      bySession.set(t.session, list);
+    }
+
+    const data = Array.from(bySession.entries()).map(([session, sessionTranscripts]) => {
+      const summary = buildSessionSummary(session, sessionTranscripts);
+      const terms: Record<string, any> = { FIRST: null, SECOND: null, THIRD: null };
+      for (const t of sessionTranscripts) {
+        if (t.term) terms[t.term] = t;
+      }
+      return { ...summary, terms };
+    });
+
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error("Error fetching full academic record:", error);
+    res.status(500).json({ success: false, message: "Unexpected error fetching academic record.", code: "SERVER_ERROR" });
+  }
+};
+
 export const createTranscript = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { studentId } = req.params;
@@ -92,6 +125,26 @@ export const createTranscript = async (req: AuthRequest, res: Response): Promise
     if (!normalizedTerm || !VALID_TERMS.includes(normalizedTerm)) {
       res.status(400).json({ success: false, message: `term must be one of ${VALID_TERMS.join(", ")}.`, code: "VALIDATION_ERROR" });
       return;
+    }
+
+    // Enforce First -> Second -> Third order within a session.
+    const termIndex = VALID_TERMS.indexOf(normalizedTerm);
+    if (termIndex > 0) {
+      const requiredPriorTerms = VALID_TERMS.slice(0, termIndex);
+      const existingPrior = await prisma.transcript.findMany({
+        where: { studentId, session, term: { in: requiredPriorTerms } },
+        select: { term: true },
+      });
+      const existingPriorSet = new Set(existingPrior.map((t) => t.term));
+      const missingTerm = requiredPriorTerms.find((t) => !existingPriorSet.has(t));
+      if (missingTerm) {
+        res.status(400).json({
+          success: false,
+          message: `${missingTerm} term must be recorded before ${normalizedTerm} term for session ${session}.`,
+          code: "VALIDATION_ERROR",
+        });
+        return;
+      }
     }
 
     const manualSubjects = Array.isArray(subjects) ? subjects : [];
