@@ -19,6 +19,31 @@ const calculateGrade = (totalScore: number): string => {
   return "F9";
 };
 
+// Cumulative summary across whatever terms have been recorded for one session
+const buildSessionSummary = (session: string, transcripts: any[]) => {
+  const termsRecorded = transcripts.map((t) => t.term).filter(Boolean);
+  const cumulativeAverage = transcripts.length
+    ? Number((transcripts.reduce((sum, t) => sum + t.averageScore, 0) / transcripts.length).toFixed(2))
+    : 0;
+
+  const bySubject = new Map<string, { totalScoreSum: number; count: number }>();
+  for (const t of transcripts) {
+    for (const s of t.subjects) {
+      const entry = bySubject.get(s.subjectName) ?? { totalScoreSum: 0, count: 0 };
+      entry.totalScoreSum += s.totalScore;
+      entry.count += 1;
+      bySubject.set(s.subjectName, entry);
+    }
+  }
+  const subjects = Array.from(bySubject.entries()).map(([subjectName, { totalScoreSum, count }]) => ({
+    subjectName,
+    termsRecorded: count,
+    cumulativeAverage: Number((totalScoreSum / count).toFixed(2)),
+  }));
+
+  return { session, termsRecorded, cumulativeAverage, subjects };
+};
+
 export const getStudentTranscripts = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { studentId } = req.params;
@@ -35,7 +60,9 @@ export const getStudentTranscripts = async (req: AuthRequest, res: Response): Pr
       take: limit ? Number(limit) : 10,
     });
 
-    res.status(200).json({ success: true, data: transcripts });
+    const summary = session ? buildSessionSummary(String(session), transcripts) : undefined;
+
+    res.status(200).json({ success: true, data: transcripts, ...(summary ? { summary } : {}) });
   } catch (error) {
     console.error("Error fetching transcripts:", error);
     res.status(500).json({ success: false, message: "Unexpected error fetching transcripts.", code: "SERVER_ERROR" });
