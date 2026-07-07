@@ -121,6 +121,7 @@ model Transcript {
   id               Int                 @id @default(autoincrement())
   studentId        String
   session          String // e.g. "2023/2024"
+  term             Term? // required at the application level for new transcripts; null on legacy rows
   className        String // snapshot of the class at the time, e.g. "SS2"
   averageScore      Float
   classPosition    String? // e.g. "3rd of 75"
@@ -131,6 +132,8 @@ model Transcript {
   updatedAt        DateTime            @updatedAt
   student          Student             @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subjects         TranscriptSubject[]
+
+  @@unique([studentId, session, term])
 }
 
 model TranscriptSubject {
@@ -233,6 +236,8 @@ model Result {
   examId       Int?
   studentId    String
   subjectId    Int
+  session      String? // e.g. "2023/2024" - only set on results recorded going forward
+  term         Term?
   assignment   Float   @default(0)
   attendance   Float   @default(0)
   classwork    Float   @default(0)
@@ -309,6 +314,12 @@ enum Role {
   STUDENT
   USER
   EXECUTIVE
+}
+
+enum Term {
+  FIRST
+  SECOND
+  THIRD
 }
 
 enum Day {

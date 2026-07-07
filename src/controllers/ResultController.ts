@@ -1,5 +1,5 @@
 // @ts-ignore
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Term } from "@prisma/client";
 import { Request, Response } from "express";
 
 const prisma = new PrismaClient();
@@ -15,6 +15,8 @@ export const createResult = async (
       examScore,
       studentId,
       subjectId,
+      session,
+      term,
       assignment = 0,
       classwork = 0,
       midterm = 0,
@@ -61,6 +63,8 @@ export const createResult = async (
         attendance,
         totalScore,
         averageScore,
+        session: session || null,
+        term: term ? (String(term).toUpperCase() as Term) : null,
         student: { connect: { id: studentId } },
         subject: { connect: { id: subjectId } },
       },
