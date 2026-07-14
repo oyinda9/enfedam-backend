@@ -56,9 +56,18 @@ export const createSubject = async (req: Request, res: Response): Promise<void> 
 /**
  * Get all Subjects with their Classes, Teachers, Lessons, Exams
  */
-export const getAllSubjects = async (_req: Request, res: Response) => {
+export const getAllSubjects = async (req: Request, res: Response) => {
   try {
+    const { classId, sectionId } = req.query;
+
+    const where = classId
+      ? { classes: { some: { id: Number(classId) } } }
+      : sectionId
+      ? { classes: { some: { sectionId: Number(sectionId) } } }
+      : undefined;
+
     const subjects = await prisma.subject.findMany({
+      where,
       include: {
         classes: { select: { id: true, name: true } },
         teachers: { select: { id: true, name: true } },
