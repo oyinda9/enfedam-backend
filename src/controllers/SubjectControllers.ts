@@ -76,3 +76,30 @@ export const getAllSubjects = async (_req: Request, res: Response) => {
     res.status(500).json({ message: 'Unexpected error fetching subjects.' });
   }
 };
+
+/**
+ * Delete a Subject by ID
+ */
+export const deleteSubject = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!req.params.id || Number.isNaN(id)) {
+      res.status(400).json({ message: 'A valid subject ID is required.' });
+      return;
+    }
+
+    const existingSubject = await prisma.subject.findUnique({ where: { id } });
+    if (!existingSubject) {
+      res.status(404).json({ message: 'Subject not found.' });
+      return;
+    }
+
+    await prisma.subject.delete({ where: { id } });
+
+    res.status(200).json({ message: 'Subject deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting subject:', error);
+    res.status(500).json({ message: 'Unexpected error deleting subject.' });
+  }
+};
