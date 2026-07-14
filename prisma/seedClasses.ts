@@ -35,12 +35,12 @@ async function main() {
       }
 
       // Connect to every curriculum subject for this section, so the class
-      // shows up correctly in subject dropdowns immediately.
-      const subjectNames = CURRICULUM[sectionName] ?? [];
-      const subjects = await prisma.subject.findMany({
-        where: { name: { in: subjectNames } },
-        select: { id: true },
-      });
+      // shows up correctly in subject dropdowns immediately. Matched
+      // case-insensitively since real subject rows don't always match the
+      // curriculum's exact casing (e.g. "mathematics" vs "Mathematics").
+      const subjectNames = new Set((CURRICULUM[sectionName] ?? []).map((n) => n.toLowerCase()));
+      const allSubjects = await prisma.subject.findMany({ select: { id: true, name: true } });
+      const subjects = allSubjects.filter((s) => subjectNames.has(s.name.toLowerCase()));
 
       await prisma.class.create({
         data: {

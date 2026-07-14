@@ -105,9 +105,6 @@ async function main() {
   const existingSubjects = await prisma.subject.findMany({ select: { id: true, name: true } });
   const existingByLowerName = new Set(existingSubjects.map((s) => s.name.trim().toLowerCase()));
 
-  // Union class ids per subject name across every section it appears in,
-  // since Subject.name is globally unique - the same subject shared across
-  // Primary/JSS/SSS must be one row connected to classes from all of them.
   const subjectClassIds = new Map<string, Set<number>>();
   for (const [sectionName, subjects] of Object.entries(CURRICULUM)) {
     const section = sectionByName.get(sectionName);
