@@ -168,6 +168,63 @@ export class ClassController {
     }
   }
 
+  // ✅ Create a new arm of an existing class, carrying over its section,
+  // capacity and subject list so nothing needs to be manually re-linked.
+  static async createArm(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { letter, capacity, supervisorId } = req.body;
+
+      if (!letter || typeof letter !== "string" || !letter.trim()) {
+        res.status(400).json({ error: 'letter is required, e.g. "B"' });
+        return;
+      }
+
+      const baseClass = await prisma.class.findUnique({
+        where: { id: parseInt(id) },
+        include: { subjects: { select: { id: true } } },
+      });
+      if (!baseClass) {
+        res.status(404).json({ error: "Class not found" });
+        return;
+      }
+
+      const newName = `${baseClass.name}${letter.trim()}`;
+      const existing = await prisma.class.findUnique({ where: { name: newName } });
+      if (existing) {
+        res.status(409).json({ error: `A class named "${newName}" already exists.` });
+        return;
+      }
+
+      if (supervisorId) {
+        const supervisorExists = await prisma.teacher.findUnique({ where: { id: supervisorId } });
+        if (!supervisorExists) {
+          res.status(400).json({ error: "Supervisor not found" });
+          return;
+        }
+      }
+
+      const newClass = await prisma.class.create({
+        data: {
+          name: newName,
+          capacity: capacity ?? baseClass.capacity,
+          sectionId: baseClass.sectionId,
+          supervisorId: supervisorId ?? null,
+          subjects: { connect: baseClass.subjects.map((s) => ({ id: s.id })) },
+        },
+        include: { section: true, supervisor: true, subjects: true },
+      });
+
+      res.status(201).json({ message: "Arm created successfully", newClass });
+    } catch (error) {
+      console.error("Error creating arm:", error);
+      res.status(500).json({
+        error: "Error creating arm",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
   // ✅ Get classes summary (id, name, section, studentCount, classTeacherId)
   static async getClassesSummary(req: Request, res: Response): Promise<void> {
     try {
