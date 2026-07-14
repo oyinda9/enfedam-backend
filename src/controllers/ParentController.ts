@@ -27,6 +27,50 @@ export const createParent = async (req: Request, res: Response) => {
   }
 };
 
+// Type-ahead search by name/surname/phone/email, with each parent's existing
+// children attached - so an admin picking a parent for a new/updated student
+// doesn't have to browse the full parent list, and can visually confirm it's
+// the right family even when that parent already has multiple children.
+export const searchParents = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    if (!q) {
+      res.status(200).json({ success: true, data: [] });
+      return;
+    }
+
+    const parents = await prisma.parent.findMany({
+      where: {
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { surname: { contains: q, mode: "insensitive" } },
+          { phone: { contains: q } },
+          { email: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      include: {
+        students: { select: { id: true, name: true, surname: true, class: { select: { name: true } } } },
+      },
+      take: 10,
+    });
+
+    const data = parents.map((p) => ({
+      id: p.id,
+      name: p.name,
+      surname: p.surname,
+      phone: p.phone,
+      email: p.email,
+      address: p.address,
+      childrenCount: p.students.length,
+      children: p.students.map((s) => ({ id: s.id, name: s.name, surname: s.surname, className: s.class?.name ?? null })),
+    }));
+
+    res.status(200).json({ success: true, data });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: "Failed to search parents", details: error.message });
+  }
+};
+
 export const getAllParents = async (req: Request, res: Response) => {
   try {
     const parents = await prisma.parent.findMany({

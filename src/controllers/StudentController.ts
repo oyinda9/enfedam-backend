@@ -39,6 +39,65 @@ export const getStudentById = async (req: Request, res: Response) : Promise<void
 const normalizeForUsername = (value: string): string =>
   value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
 
+type ParentResolution = { ok: true; parentId: string | null } | { ok: false };
+
+// Resolve a parent for a student: link an existing one by id, find-or-create by
+// phone (so siblings automatically link to the same parent instead of
+// duplicating), or none. On failure, writes the response itself (ok: false) -
+// callers should just `return` when they see ok: false.
+const resolveParentId = async (
+  parentId: string | null | undefined,
+  parentInput: any,
+  res: Response
+): Promise<ParentResolution> => {
+  if (parentId) {
+    const existingParent = await prisma.parent.findUnique({ where: { id: parentId } });
+    if (!existingParent) {
+      res.status(404).json({ error: "Parent not found" });
+      return { ok: false };
+    }
+    return { ok: true, parentId: existingParent.id };
+  }
+
+  if (parentInput) {
+    const { name: parentName, surname: parentSurname, phone: parentPhone, email: parentEmail, address: parentAddress } = parentInput;
+    if (!parentName || !parentSurname || !parentPhone || !parentAddress) {
+      res.status(400).json({ error: "parent.name, parent.surname, parent.phone and parent.address are required to create a new parent." });
+      return { ok: false };
+    }
+
+    const existingParentByPhone = await prisma.parent.findUnique({ where: { phone: parentPhone } });
+    if (existingParentByPhone) {
+      // Same parent already on file (e.g. a sibling already enrolled) - link to them, don't duplicate.
+      return { ok: true, parentId: existingParentByPhone.id };
+    }
+
+    const parentUsername = `${normalizeForUsername(parentName)}.${normalizeForUsername(parentSurname)}.enfedamacademy`;
+    const existingParentByUsername = await prisma.parent.findUnique({ where: { username: parentUsername } });
+    if (existingParentByUsername) {
+      res.status(400).json({
+        error: "A different parent with this same name already exists (different phone number). Please double-check the phone number, or contact support to resolve the naming conflict.",
+      });
+      return { ok: false };
+    }
+
+    const newParent = await prisma.parent.create({
+      data: {
+        id: crypto.randomUUID(),
+        username: parentUsername,
+        name: parentName,
+        surname: parentSurname,
+        phone: parentPhone,
+        email: parentEmail || null,
+        address: parentAddress,
+      },
+    });
+    return { ok: true, parentId: newParent.id };
+  }
+
+  return { ok: true, parentId: null };
+};
+
 export const createStudent = async (
   req: Request,
   res: Response
@@ -102,50 +161,9 @@ export const createStudent = async (
     }
 
     // Resolve the parent: link an existing one by id, find-or-create by phone, or none.
-    let resolvedParentId: string | null = null;
-
-    if (parentId) {
-      const existingParent = await prisma.parent.findUnique({ where: { id: parentId } });
-      if (!existingParent) {
-        res.status(404).json({ error: "Parent not found" });
-        return;
-      }
-      resolvedParentId = existingParent.id;
-    } else if (parentInput) {
-      const { name: parentName, surname: parentSurname, phone: parentPhone, email: parentEmail, address: parentAddress } = parentInput;
-      if (!parentName || !parentSurname || !parentPhone || !parentAddress) {
-        res.status(400).json({ error: "parent.name, parent.surname, parent.phone and parent.address are required to create a new parent." });
-        return;
-      }
-
-      const existingParentByPhone = await prisma.parent.findUnique({ where: { phone: parentPhone } });
-      if (existingParentByPhone) {
-        // Same parent already on file (e.g. a sibling already enrolled) - link to them, don't duplicate.
-        resolvedParentId = existingParentByPhone.id;
-      } else {
-        const parentUsername = `${normalizeForUsername(parentName)}.${normalizeForUsername(parentSurname)}.enfedamacademy`;
-        const existingParentByUsername = await prisma.parent.findUnique({ where: { username: parentUsername } });
-        if (existingParentByUsername) {
-          res.status(400).json({
-            error: "A different parent with this same name already exists (different phone number). Please double-check the phone number, or contact support to resolve the naming conflict.",
-          });
-          return;
-        }
-
-        const newParent = await prisma.parent.create({
-          data: {
-            id: crypto.randomUUID(),
-            username: parentUsername,
-            name: parentName,
-            surname: parentSurname,
-            phone: parentPhone,
-            email: parentEmail || null,
-            address: parentAddress,
-          },
-        });
-        resolvedParentId = newParent.id;
-      }
-    }
+    const parentResolution = await resolveParentId(parentId, parentInput, res);
+    if (!parentResolution.ok) return;
+    const resolvedParentId = parentResolution.parentId;
 
     // Validate subjects
     const validSubjectIds = await prisma.subject.findMany({
@@ -194,7 +212,7 @@ export const createStudent = async (
 
 
 // Update a student
-export const updateStudent = async (req: Request, res: Response) => {
+export const updateStudent = async (req: Request, res: Response): Promise<void> => {
   const { id } = req.params;
   const {
     username,
@@ -207,10 +225,18 @@ export const updateStudent = async (req: Request, res: Response) => {
     bloodType,
     sex,
     parentId,
+    parent: parentInput,
     classId,
     birthday,
   } = req.body;
   try {
+    let resolvedParentId: string | null | undefined = parentId;
+    if (parentId || parentInput) {
+      const parentResolution = await resolveParentId(parentId, parentInput, res);
+      if (!parentResolution.ok) return;
+      resolvedParentId = parentResolution.parentId;
+    }
+
     const student = await prisma.student.update({
       where: { id },
       data: {
@@ -223,13 +249,15 @@ export const updateStudent = async (req: Request, res: Response) => {
         img,
         bloodType,
         sex,
-        parentId,
+        parentId: resolvedParentId,
         classId,
         birthday,
       },
+      include: { parent: true, class: true },
     });
     res.json(student);
   } catch (error) {
+    console.error(error);
     res.status(400).json({ error: "Failed to update student" });
   }
 };
