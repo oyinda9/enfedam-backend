@@ -59,10 +59,13 @@ export class ClassController {
     }
   }
 
-  // ✅ Get all classes
+  // ✅ Get all classes (optionally filtered by ?sectionId=)
   static async getAllClasses(req: Request, res: Response): Promise<void> {
     try {
+      const { sectionId } = req.query;
+
       const classes = await prisma.class.findMany({
+        where: sectionId ? { sectionId: Number(sectionId) } : undefined,
         include: {
           section: true,
           supervisor: true,
@@ -225,13 +228,15 @@ export class ClassController {
     }
   }
 
-  // ✅ Get classes summary (id, name, section, studentCount, classTeacherId)
+  // ✅ Get classes summary (id, name, section, studentCount, classTeacherId), optionally filtered by ?sectionId=
   static async getClassesSummary(req: Request, res: Response): Promise<void> {
     try {
-      const { limit, skip } = req.query;
+      const { limit, skip, sectionId } = req.query;
+      const where = sectionId ? { sectionId: Number(sectionId) } : undefined;
 
       const [classes, total] = await Promise.all([
         prisma.class.findMany({
+          where,
           include: {
             section: { select: { id: true, name: true } },
             _count: { select: { students: true } },
@@ -239,7 +244,7 @@ export class ClassController {
           take: limit ? Number(limit) : 100,
           skip: skip ? Number(skip) : 0,
         }),
-        prisma.class.count(),
+        prisma.class.count({ where }),
       ]);
 
       const data = classes.map((c) => ({
