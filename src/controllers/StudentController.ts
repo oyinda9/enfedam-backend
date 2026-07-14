@@ -53,10 +53,11 @@ export const createStudent = async (
     img,
     bloodType,
     sex,
-    parentId=[],
+    parentId = null,
+    parent: parentInput,
     classId,
     birthday,
-    subjectIds = [], 
+    subjectIds = [],
   } = req.body;
 
   try {
@@ -100,13 +101,49 @@ export const createStudent = async (
       }
     }
 
-    // Validate if parentId exists
-    let parentData = null;
+    // Resolve the parent: link an existing one by id, find-or-create by phone, or none.
+    let resolvedParentId: string | null = null;
+
     if (parentId) {
-      parentData = await prisma.parent.findUnique({ where: { id: parentId } });
-      if (!parentData) {
+      const existingParent = await prisma.parent.findUnique({ where: { id: parentId } });
+      if (!existingParent) {
         res.status(404).json({ error: "Parent not found" });
         return;
+      }
+      resolvedParentId = existingParent.id;
+    } else if (parentInput) {
+      const { name: parentName, surname: parentSurname, phone: parentPhone, email: parentEmail, address: parentAddress } = parentInput;
+      if (!parentName || !parentSurname || !parentPhone || !parentAddress) {
+        res.status(400).json({ error: "parent.name, parent.surname, parent.phone and parent.address are required to create a new parent." });
+        return;
+      }
+
+      const existingParentByPhone = await prisma.parent.findUnique({ where: { phone: parentPhone } });
+      if (existingParentByPhone) {
+        // Same parent already on file (e.g. a sibling already enrolled) - link to them, don't duplicate.
+        resolvedParentId = existingParentByPhone.id;
+      } else {
+        const parentUsername = `${normalizeForUsername(parentName)}.${normalizeForUsername(parentSurname)}.enfedamacademy`;
+        const existingParentByUsername = await prisma.parent.findUnique({ where: { username: parentUsername } });
+        if (existingParentByUsername) {
+          res.status(400).json({
+            error: "A different parent with this same name already exists (different phone number). Please double-check the phone number, or contact support to resolve the naming conflict.",
+          });
+          return;
+        }
+
+        const newParent = await prisma.parent.create({
+          data: {
+            id: crypto.randomUUID(),
+            username: parentUsername,
+            name: parentName,
+            surname: parentSurname,
+            phone: parentPhone,
+            email: parentEmail || null,
+            address: parentAddress,
+          },
+        });
+        resolvedParentId = newParent.id;
       }
     }
 
@@ -140,7 +177,7 @@ export const createStudent = async (
       },
     };
 
-    if (parentData) studentData.parent = { connect: { id: parentId } };
+    if (resolvedParentId) studentData.parent = { connect: { id: resolvedParentId } };
     if (classData) studentData.class = { connect: { id: classId } };
 
     const student = await prisma.student.create({
