@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 // Standard ENFEDAM Academy curriculum. Keys must match real Section.name values
 // exactly so subjects connect to that section's existing classes automatically.
-const CURRICULUM: Record<string, string[]> = {
+export const CURRICULUM: Record<string, string[]> = {
   Creche: [
     "Language Development",
     "Numeracy",
@@ -143,9 +143,11 @@ async function main() {
   console.log(`Skipped ${skipped.length} (name already existed):`, skipped);
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}

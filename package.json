@@ -9,7 +9,8 @@
     "build": "tsc",
     "postinstall": "prisma generate",
     "seed": "ts-node prisma/seed.ts",
-    "seed:curriculum": "ts-node prisma/seedCurriculum.ts"
+    "seed:curriculum": "ts-node prisma/seedCurriculum.ts",
+    "seed:classes": "ts-node prisma/seedClasses.ts"
   },
   "keywords": [],
   "author": "",
