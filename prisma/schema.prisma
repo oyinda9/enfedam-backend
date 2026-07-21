@@ -236,8 +236,8 @@ model Result {
   examId       Int?
   studentId    String
   subjectId    Int
-  session      String? // e.g. "2023/2024" - only set on results recorded going forward
-  term         Term?
+  session      String // e.g. "2023/2024"
+  term         Term
   assignment   Float   @default(0)
   attendance   Float   @default(0)
   classwork    Float   @default(0)
@@ -248,6 +248,8 @@ model Result {
   exam         Exam?   @relation(fields: [examId], references: [id])
    student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
   subject      Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([studentId, subjectId, session, term])
 }
 
 model Attendance {

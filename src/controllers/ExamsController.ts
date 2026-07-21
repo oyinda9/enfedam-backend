@@ -1,37 +1,51 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Term } from '@prisma/client'
 import { Request, Response } from 'express'
 
 const prisma = new PrismaClient()
 
+const VALID_TERMS: Term[] = [Term.FIRST, Term.SECOND, Term.THIRD];
+
 // Create a new exam
 export const createExamScore = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { score, studentId, subjectId } = req.body;
-  
+      const { score, studentId, subjectId, session, term } = req.body;
+
+      if (!session || typeof session !== "string") {
+        res.status(400).json({ error: 'session is required, e.g. "2024/2025".' });
+        return;
+      }
+      const normalizedTerm = typeof term === "string" ? (term.toUpperCase() as Term) : undefined;
+      if (!normalizedTerm || !VALID_TERMS.includes(normalizedTerm)) {
+        res.status(400).json({ error: `term is required and must be one of ${VALID_TERMS.join(", ")}.` });
+        return;
+      }
+
       // Fetch the exam that the score will be associated with (e.g., by a default or predefined exam logic)
-      const exam = await prisma.exam.findFirst(); 
-  
+      const exam = await prisma.exam.findFirst();
+
       if (!exam) {
         res.status(400).json({ error: 'No exam found to associate the score with' });
         return;
       }
-  
-  
+
+
       const result = await prisma.result.create({
         data: {
           score,
+          session,
+          term: normalizedTerm,
           exam: {
-            connect: { id: exam.id }, 
+            connect: { id: exam.id },
           },
           student: {
-            connect: { id: studentId }, 
+            connect: { id: studentId },
           },
           subject: {
-            connect: { id: subjectId },  
+            connect: { id: subjectId },
           },
         },
       });
-  
+
       res.status(201).json(result);
     } catch (error) {
       res.status(500).json({ error });

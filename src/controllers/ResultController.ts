@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 
 // Create a new result
 
+const VALID_TERMS: Term[] = [Term.FIRST, Term.SECOND, Term.THIRD];
+
 export const createResult = async (
   req: Request,
   res: Response
@@ -22,6 +24,16 @@ export const createResult = async (
       midterm = 0,
       attendance = 0,
     } = req.body;
+
+    if (!session || typeof session !== "string") {
+      res.status(400).json({ message: "session is required, e.g. \"2024/2025\"." });
+      return;
+    }
+    const normalizedTerm = typeof term === "string" ? (term.toUpperCase() as Term) : undefined;
+    if (!normalizedTerm || !VALID_TERMS.includes(normalizedTerm)) {
+      res.status(400).json({ message: `term is required and must be one of ${VALID_TERMS.join(", ")}.` });
+      return;
+    }
 
     // Step 1: Fetch student and check if enrolled in the subject
     const student = await prisma.student.findUnique({
@@ -52,10 +64,20 @@ export const createResult = async (
     const averageScore = totalScore / 5;
     const score = totalScore; // Set score to be equal to totalScore
 
-    // Step 3: Create the result
-    const result = await prisma.result.create({
-      data: {
-        score, // The score is the same as the totalScore
+    // Step 3: Create or replace the result for this student/subject/session/term -
+    // re-recording the same combination updates the existing row instead of
+    // piling up duplicates.
+    const result = await prisma.result.upsert({
+      where: {
+        studentId_subjectId_session_term: {
+          studentId,
+          subjectId,
+          session,
+          term: normalizedTerm,
+        },
+      },
+      update: {
+        score,
         examScore,
         assignment,
         classwork,
@@ -63,8 +85,18 @@ export const createResult = async (
         attendance,
         totalScore,
         averageScore,
-        session: session || null,
-        term: term ? (String(term).toUpperCase() as Term) : null,
+      },
+      create: {
+        score,
+        examScore,
+        assignment,
+        classwork,
+        midterm,
+        attendance,
+        totalScore,
+        averageScore,
+        session,
+        term: normalizedTerm,
         student: { connect: { id: studentId } },
         subject: { connect: { id: subjectId } },
       },
@@ -132,10 +164,15 @@ export const getResultsByStudentId = async (
 ): Promise<void> => {
   try {
     const { studentId } = req.params;
+    const { session, term } = req.query;
 
     // Fetch all results for the student including subject details
     const results = await prisma.result.findMany({
-      where: { studentId },
+      where: {
+        studentId,
+        ...(session ? { session: String(session) } : {}),
+        ...(term ? { term: String(term).toUpperCase() as Term } : {}),
+      },
       include: {
         subject: true,
       },
@@ -171,6 +208,8 @@ export const getResultsByStudentId = async (
 
       groupedResults[subjectName].scores.push({
         resultId: result.id,
+        session: result.session,
+        term: result.term,
         score: result.score,
         assignment: result.assignment ?? 0,
         classwork: result.classwork ?? 0,
@@ -203,7 +242,12 @@ export const getAllStudentsCummulatedResults = async (
   res: Response
 ): Promise<void> => {
   try {
+    const { session, term } = req.query;
     const results = await prisma.result.findMany({
+      where: {
+        ...(session ? { session: String(session) } : {}),
+        ...(term ? { term: String(term).toUpperCase() as Term } : {}),
+      },
       include: { student: true },
     });
 
@@ -225,6 +269,7 @@ export const getAllStudentsCummulatedResults = async (
       };
       overallTotal: number;
       subjectCount: number;
+      subjectIds: Set<number>;
     };
 
     const studentResults = results.reduce<Record<string, StudentResult>>((acc:any, result:any) => {
@@ -235,7 +280,8 @@ export const getAllStudentsCummulatedResults = async (
           studentName: `${result.student?.name || ''} ${result.student?.surname || ''}`.trim(),
           totals: { assignment: 0, classwork: 0, midterm: 0, attendance: 0, exam: 0 },
           overallTotal: 0,
-          subjectCount: 0
+          subjectCount: 0,
+          subjectIds: new Set<number>(),
         };
       }
 
@@ -245,15 +291,20 @@ export const getAllStudentsCummulatedResults = async (
       student.totals.midterm += result.midterm || 0;
       student.totals.attendance += result.attendance || 0;
       student.totals.exam += result.examScore || 0;
-      student.overallTotal += (result.assignment || 0) + (result.classwork || 0) + 
-                             (result.midterm || 0) + (result.attendance || 0) + 
+      student.overallTotal += (result.assignment || 0) + (result.classwork || 0) +
+                             (result.midterm || 0) + (result.attendance || 0) +
                              (result.examScore || 0);
-      student.subjectCount++;
+      student.subjectIds.add(result.subjectId);
 
       return acc;
     }, {}); // TypeScript now knows this will be Record<string, StudentResult>
 
-    res.status(200).json(Object.values(studentResults));
+    const data = Object.values(studentResults).map((s) => {
+      const { subjectIds, ...rest } = s;
+      return { ...rest, subjectCount: subjectIds.size };
+    });
+
+    res.status(200).json(data);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -268,11 +319,14 @@ export const getOneStudentsCummulatedResults = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+    const { session, term } = req.query;
 
     // Get all results for the specified student
     const results = await prisma.result.findMany({
       where: {
         studentId: id,
+        ...(session ? { session: String(session) } : {}),
+        ...(term ? { term: String(term).toUpperCase() as Term } : {}),
       },
       include: {
         student: true,
@@ -327,6 +381,8 @@ export const getOneStudentsCummulatedResults = async (
       studentResult.subjectDetails.push({
         subjectId: result.subjectId,
         subjectName: result.subject?.name,
+        session: result.session,
+        term: result.term,
         examId: result.examId,
         examName: result.exam,
         assignment,
