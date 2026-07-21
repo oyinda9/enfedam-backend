@@ -417,12 +417,35 @@ export const updateResult = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { score, examId, studentId, subjectId } = req.body;
+    const { examId, studentId, subjectId, assignment, classwork, midterm, attendance, examScore } = req.body;
+
+    const existing = await prisma.result.findUnique({ where: { id: Number(id) } });
+    if (!existing) {
+      res.status(404).json({ message: "Result not found" });
+      return;
+    }
+
+    // Recompute totalScore/averageScore/score whenever any component changes,
+    // falling back to the existing row's value for anything not sent.
+    const componentsChanged = [assignment, classwork, midterm, attendance, examScore].some((v) => v !== undefined);
+    const nextAssignment = assignment ?? existing.assignment;
+    const nextClasswork = classwork ?? existing.classwork;
+    const nextMidterm = midterm ?? existing.midterm;
+    const nextAttendance = attendance ?? existing.attendance;
+    const nextExamScore = examScore ?? existing.examScore ?? 0;
+
+    const totalScore = nextAssignment + nextClasswork + nextMidterm + nextAttendance + nextExamScore;
+    const averageScore = totalScore / 5;
 
     const result = await prisma.result.update({
       where: { id: Number(id) },
       data: {
-        score,
+        assignment: nextAssignment,
+        classwork: nextClasswork,
+        midterm: nextMidterm,
+        attendance: nextAttendance,
+        examScore: nextExamScore,
+        ...(componentsChanged ? { totalScore, averageScore, score: totalScore } : {}),
         exam: examId ? { connect: { id: examId } } : undefined,
         student: studentId ? { connect: { id: studentId } } : undefined,
         subject: subjectId ? { connect: { id: subjectId } } : undefined,
@@ -430,7 +453,11 @@ export const updateResult = async (
     });
 
     res.status(200).json(result); // Respond with the updated result
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      res.status(409).json({ message: "A result for this student/subject/session/term already exists." });
+      return;
+    }
     console.error(error);
     res.status(500).json({ message: "Failed to update result" });
   }
