@@ -444,6 +444,12 @@ export const deleteResult = async (
   try {
     const { id } = req.params;
 
+    const existing = await prisma.result.findUnique({ where: { id: Number(id) } });
+    if (!existing) {
+      res.status(404).json({ message: "Result not found" });
+      return;
+    }
+
     await prisma.result.delete({
       where: { id: Number(id) },
     });
