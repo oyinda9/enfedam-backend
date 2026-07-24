@@ -1,6 +1,7 @@
 // @ts-ignore
-import { PrismaClient, Term } from "@prisma/client";
+import { PrismaClient, Term, PublicationStatus, Role } from "@prisma/client";
 import { Request, Response } from "express";
+import { AuthRequest } from "../middleware/authMiddleware";
 
 const prisma = new PrismaClient();
 
@@ -314,12 +315,35 @@ export const getAllStudentsCummulatedResults = async (
 // Get cumulative results for ONE specific student
 
 export const getOneStudentsCummulatedResults = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params;
+    const { studentId: id } = req.params;
     const { session, term } = req.query;
+
+    // Parents/students only ever see PUBLISHED results, and only for a specific
+    // session+term - never an unscoped cross-term total that could blend in
+    // unpublished data. Staff (ADMIN/TEACHER) bypass this entirely.
+    if (req.user && (req.user.role === Role.STUDENT || req.user.role === Role.USER)) {
+      if (!session || !term) {
+        res.status(400).json({ message: "session and term are required." });
+        return;
+      }
+      const normalizedTerm = String(term).toUpperCase() as Term;
+      const student = await prisma.student.findUnique({ where: { id }, select: { classId: true } });
+      if (!student) {
+        res.status(404).json({ message: "Student not found" });
+        return;
+      }
+      const publication = await prisma.resultPublication.findUnique({
+        where: { classId_session_term: { classId: student.classId, session: String(session), term: normalizedTerm } },
+      });
+      if (publication?.status !== PublicationStatus.PUBLISHED) {
+        res.status(403).json({ message: "Results for this term have not been published yet." });
+        return;
+      }
+    }
 
     // Get all results for the specified student
     const results = await prisma.result.findMany({

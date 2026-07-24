@@ -22,6 +22,7 @@ import SectionRoutes from "./routes/SectionRoute";
 import GalleryRoute from "./routes/GalleryRoute"
 import ClassesSummaryRoute from "./routes/ClassesSummaryRoute"
 import TermsRoute from "./routes/TermsRoute"
+import ResultPublicationRoutes from "./routes/ResultPublicationRoutes"
 const prisma = new PrismaClient();
 const app = express();
 const port = 5000;
@@ -47,6 +48,7 @@ app.use("/gallery", GalleryRoute);
 app.use("/auth", AuthRoutes);
 app.use("/classes", ClassesSummaryRoute);
 app.use("/terms", TermsRoute);
+app.use("/result-publications", ResultPublicationRoutes);
 app.use("/system_images", express.static(path.join(__dirname, "../system_images")));
 
 // Health check endpoint

@@ -104,6 +104,7 @@ model Class {
   lessons       Lesson[]
   students      Student[]
   subjects      Subject[]      @relation("ClassSubjects")
+  resultPublications ResultPublication[]
 }
 
 model Subject {
@@ -250,6 +251,31 @@ model Result {
   subject      Subject @relation(fields: [subjectId], references: [id])
 
   @@unique([studentId, subjectId, session, term])
+}
+
+enum PublicationStatus {
+  DRAFT
+  SUBMITTED
+  PUBLISHED
+}
+
+// Gates when a class's results become visible to parents/students. Results
+// are entered per-subject (Result) and per-term (Transcript), but release is
+// controlled per class+session+term - matches how schools actually announce
+// results ("SS2 second-term results are out"), not per individual subject.
+model ResultPublication {
+  id          Int               @id @default(autoincrement())
+  classId     Int
+  session     String
+  term        Term
+  status      PublicationStatus @default(DRAFT)
+  submittedBy String? // teacher id who marked it ready for review
+  submittedAt DateTime?
+  publishedBy String? // admin id who released it to parents
+  publishedAt DateTime?
+  class       Class             @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, session, term])
 }
 
 model Attendance {

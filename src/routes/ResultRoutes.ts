@@ -8,17 +8,19 @@ import {
   deleteResult,
   getResultsByStudentId,getOneStudentsCummulatedResults
 ,getAllStudentsCummulatedResults} from '../controllers/ResultController';
-import { authenticate, requireRole } from '../middleware/authMiddleware';
+import { authenticate, requireRole, requireSelfOrRoles } from '../middleware/authMiddleware';
 
 const router = Router();
 const staffOnly = requireRole(Role.ADMIN, Role.TEACHER);
+const readAccess = requireSelfOrRoles(Role.ADMIN, Role.TEACHER);
 
 router.post('/', authenticate, staffOnly, createResult);
 router.get('/', getAllResults);
 
 // Static/multi-segment routes must come before '/:id' or Express matches '/:id' first.
-router.get('/all', getAllStudentsCummulatedResults); // GET /results/all - cumulative for ALL students
-router.get('/cumulative/:id', getOneStudentsCummulatedResults); // GET /results/cumulative/:id - cumulative for ONE student
+router.get('/all', authenticate, staffOnly, getAllStudentsCummulatedResults); // GET /results/all - cumulative for ALL students, staff only
+// :studentId (not :id) so requireSelfOrRoles can enforce ownership; publish-status gate for STUDENT/USER lives in the controller.
+router.get('/cumulative/:studentId', authenticate, readAccess, getOneStudentsCummulatedResults); // GET /results/cumulative/:studentId - cumulative for ONE student
 router.get('/studentid/:id', getResultsByStudentId);
 
 router.get('/:id', getResultById);
